@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package HomeHub.Events;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "HomeHub.Events";
+
+message Event {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+  string organizer = 4;
+  optional google.protobuf.Timestamp start = 5;
+  optional google.protobuf.Timestamp end = 6;
+  repeated string rrules = 7;
+  string category = 8;
+  bool allDay = 9;
+  repeated google.protobuf.Timestamp exceptDates = 10;
+}
+
+message SimplifiedEvent {
+  string id = 1;
+  string title = 2;
+  optional google.protobuf.Timestamp start = 3;
+  optional google.protobuf.Timestamp end = 4;
+  bool allDay = 5;
+  string category = 6;
+}
+
+message DateRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+message GetEventsRequest {
+  DateRange range = 1;
+}
+
+message GetEventsResponse {
+  repeated SimplifiedEvent events = 1;
+}
+
+message GetEventRequest {
+  string id = 1;
+}
+
+message GetEventResponse {
+  Event event = 1;
+}
+
+message RemoveEventRequest {
+  string id = 1;
+}
+
+message RemoveOccurrenceRequest {
+  string event_id = 1;
+  google.protobuf.Timestamp occurrence_date = 2;
+}
+
+message UpdateEventRequest {
+  Event event = 1;
+}
+
+message CreateEventRequest {
+  Event event = 1;
+}
+
+message CreateEventResponse {
+  string id = 1;
+}
+
+service EventService {
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse);
+  rpc RemoveEvent(RemoveEventRequest) returns (google.protobuf.Empty);
+  rpc RemoveOccurrence(RemoveOccurrenceRequest) returns (google.protobuf.Empty);
+  rpc UpdateEvent(UpdateEventRequest) returns (google.protobuf.Empty);
+  rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse);
+}

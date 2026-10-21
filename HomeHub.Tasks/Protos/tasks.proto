@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+package HomeHub.Tasks;
+
+option csharp_namespace = "HomeHub.Tasks";
+
+message RecurringTask {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+  string created_by = 4;
+  optional string assigned_to = 5;
+  string rrule = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message Task {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+  string created_by = 4;
+  optional string assigned_to = 5;
+  bool done = 6;
+  optional google.protobuf.Timestamp done_at = 7;
+  optional string recurring_task_id = 8;
+}
+
+message CreateTaskRequest {
+  Task task = 1;
+}
+
+message CreateTaskResponse {
+  string id = 1;
+}
+
+message CreateRecurringTaskRequest {
+  RecurringTask recurring_task = 1;
+}
+
+message CreateRecurringTaskResponse {
+  string id = 1;
+}
+
+message GetTaskRequest {
+  string id = 1;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message GetRecurringTaskRequest {
+  string id = 1;
+}
+
+message GetRecurringTaskResponse {
+  RecurringTask recurring_task = 1;
+  repeated Task instances = 2;
+}
+
+message UpdateTaskRequest {
+  Task task = 1;
+}
+
+message UpdateRecurringTaskRequest {
+  RecurringTask recurring_task = 1;
+}
+
+message DeleteTaskRequest {
+  string id = 1;
+}
+
+message DeleteRecurringTaskRequest {
+  string id = 1;
+}
+
+message ListTasksRequest {
+  optional string assigned_to = 1;
+  optional bool done_only = 2;
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message ListRecurringTasksRequest {
+  optional string assigned_to = 1;
+}
+
+message ListRecurringTasksResponse {
+  repeated RecurringTask recurring_tasks = 1;
+}
+
+message GetMyTasksRequest {
+  optional bool done_only = 1;
+}
+
+message GetMyTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message GetMyRecurringTasksRequest {
+}
+
+message GetMyRecurringTasksResponse {
+  repeated RecurringTask recurring_tasks = 1;
+}
+
+message DateRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+message GetTasksInRangeRequest {
+  DateRange range = 1;
+}
+
+message GetTasksInRangeResponse {
+  repeated Task tasks = 1;
+}
+
+service TaskService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc CreateRecurringTask(CreateRecurringTaskRequest) returns (CreateRecurringTaskResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc GetRecurringTask(GetRecurringTaskRequest) returns (GetRecurringTaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (google.protobuf.Empty);
+  rpc UpdateRecurringTask(UpdateRecurringTaskRequest) returns (google.protobuf.Empty);
+  rpc DeleteTask(DeleteTaskRequest) returns (google.protobuf.Empty);
+  rpc DeleteRecurringTask(DeleteRecurringTaskRequest) returns (google.protobuf.Empty);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc ListRecurringTasks(ListRecurringTasksRequest) returns (ListRecurringTasksResponse);
+  rpc GetMyTasks(GetMyTasksRequest) returns (GetMyTasksResponse);
+  rpc GetMyRecurringTasks(GetMyRecurringTasksRequest) returns (GetMyRecurringTasksResponse);
+  rpc GetTasksInRange(GetTasksInRangeRequest) returns (GetTasksInRangeResponse);
+}
