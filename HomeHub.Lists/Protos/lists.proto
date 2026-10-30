@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+package HomeHub.Lists;
+
+option csharp_namespace = "HomeHub.Lists";
+
+message List {
+  string id = 1;
+  string title = 2;
+  repeated string content = 3;
+  string created_by = 4;
+  google.protobuf.Timestamp created_at = 5;
+  optional google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateListRequest {
+  List list = 1;
+}
+
+message CreateListResponse {
+  string id = 1;
+}
+
+message GetListRequest {
+  string id = 1;
+}
+
+message GetListResponse {
+  List list = 1;
+}
+
+message UpdateListRequest {
+  List list = 1;
+}
+
+message DeleteListRequest {
+  string id = 1;
+}
+
+message ListListsRequest {
+}
+
+message ListListsResponse {
+  repeated List lists = 1;
+}
+
+service ListService {
+  rpc CreateList(CreateListRequest) returns (CreateListResponse);
+  rpc GetList(GetListRequest) returns (GetListResponse);
+  rpc UpdateList(UpdateListRequest) returns (google.protobuf.Empty);
+  rpc DeleteList(DeleteListRequest) returns (google.protobuf.Empty);
+  rpc ListLists(ListListsRequest) returns (ListListsResponse);
+}

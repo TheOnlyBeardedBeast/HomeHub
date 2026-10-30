@@ -1,7 +1,8 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using HomeHub.Events.Contexts;
+using HomeHub.Hub.Contexts;
 using HomeHub.Events.Services;
+using HomeHub.Users.Security;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using EventEntity = HomeHub.Events.Entities.Event;
@@ -11,21 +12,26 @@ namespace HomeHub.Events.Tests.Services;
 
 public class EventHubTests
 {
-    private EventDbContext CreateInMemoryDbContext()
+    private static readonly Guid UserId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
+    private HubDbContext CreateInMemoryDbContext()
     {
-        var options = new DbContextOptionsBuilder<EventDbContext>()
+        var options = new DbContextOptionsBuilder<HubDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        return new EventDbContext(options);
+        return new HubDbContext(options);
     }
+
+    private static EventHub CreateEventHub(HubDbContext dbContext) =>
+        new(dbContext, new CurrentUser { UserId = UserId, FullName = "Test User" });
 
     [Fact]
     public async Task CreateEvent_WithValidEvent_CreatesEventSuccessfully()
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var organizerId = Guid.NewGuid();
         var startTime = DateTime.UtcNow.AddDays(1);
@@ -57,7 +63,7 @@ public class EventHubTests
         Assert.NotNull(savedEvent);
         Assert.Equal("Test Event", savedEvent.Title);
         Assert.Equal("Test Description", savedEvent.Description);
-        Assert.Equal(organizerId, savedEvent.Organizer);
+        Assert.Equal(UserId, savedEvent.Organizer);
     }
 
     [Fact]
@@ -65,7 +71,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var createEventRequest = new CreateEventRequest
         {
@@ -84,7 +90,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var eventId = Guid.NewGuid();
         var organizerId = Guid.NewGuid();
@@ -127,7 +133,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var getEventRequest = new GetEventRequest
         {
@@ -146,7 +152,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var nonExistentId = Guid.NewGuid().ToString();
 
@@ -167,7 +173,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var eventId = Guid.NewGuid();
         var eventEntity = new EventEntity
@@ -199,7 +205,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var removeEventRequest = new RemoveEventRequest
         {
@@ -218,7 +224,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var eventId = Guid.NewGuid();
         var organizerId = Guid.NewGuid();
@@ -263,7 +269,7 @@ public class EventHubTests
         Assert.NotNull(updatedEvent);
         Assert.Equal("Updated Title", updatedEvent.Title);
         Assert.Equal("Updated Description", updatedEvent.Description);
-        Assert.Equal(newOrganizerId, updatedEvent.Organizer);
+        Assert.Equal(organizerId, updatedEvent.Organizer);
         Assert.Equal("Workshop", updatedEvent.Category);
         Assert.True(updatedEvent.AllDay);
     }
@@ -273,7 +279,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var updateEventRequest = new UpdateEventRequest
         {
@@ -298,7 +304,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var eventId = Guid.NewGuid();
         var occurrenceDate = DateTime.UtcNow.AddDays(1);
@@ -337,7 +343,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var eventId = Guid.NewGuid();
         var occurrenceDate = DateTime.UtcNow.AddDays(1);
@@ -376,7 +382,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var now = DateTime.UtcNow;
         var rangeStart = now.AddDays(1);
@@ -432,7 +438,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         var getEventsRequest = new GetEventsRequest
         {
@@ -451,7 +457,7 @@ public class EventHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var eventHub = new EventHub(dbContext);
+        var eventHub = CreateEventHub(dbContext);
 
         // Create a start date that's a Monday
         var now = DateTime.UtcNow;
@@ -505,5 +511,95 @@ public class EventHubTests
         Assert.Contains(DayOfWeek.Monday, eventDates);
         Assert.Contains(DayOfWeek.Wednesday, eventDates);
         Assert.Contains(DayOfWeek.Friday, eventDates);
+    }
+
+    [Fact]
+    public async Task GetEvents_WithRecurringEventStartedBeforeRange_ReturnsOccurrences()
+    {
+        // Arrange
+        var dbContext = CreateInMemoryDbContext();
+        var eventHub = CreateEventHub(dbContext);
+
+        var now = DateTime.UtcNow;
+        var firstOccurrence = now.Date.AddDays(-14).AddHours(10);
+
+        var recurringEvent = new EventEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Weekly Dinner",
+            Organizer = Guid.NewGuid(),
+            Start = firstOccurrence,
+            End = firstOccurrence.AddHours(1),
+            Rrules = new[] { "FREQ=WEEKLY" },
+            Category = "Family",
+            AllDay = false
+        };
+
+        dbContext.Events.Add(recurringEvent);
+        await dbContext.SaveChangesAsync();
+
+        var getEventsRequest = new GetEventsRequest
+        {
+            Range = new DateRange
+            {
+                Start = Timestamp.FromDateTime(now.Date),
+                End = Timestamp.FromDateTime(now.Date.AddDays(7))
+            }
+        };
+
+        // Act
+        var response = await eventHub.GetEvents(getEventsRequest, null!);
+
+        // Assert
+        Assert.Contains(response.Events, e => e.Title == "Weekly Dinner");
+    }
+
+    [Fact]
+    public async Task CreateEvent_WithMissingStart_ThrowsInvalidArgument()
+    {
+        // Arrange
+        var dbContext = CreateInMemoryDbContext();
+        var eventHub = CreateEventHub(dbContext);
+
+        var request = new CreateEventRequest
+        {
+            Event = new EventProto
+            {
+                Title = "No Start",
+                Category = "Family"
+            }
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => eventHub.CreateEvent(request, null!));
+
+        Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateEvent_WithInvalidRRule_ThrowsInvalidArgument()
+    {
+        // Arrange
+        var dbContext = CreateInMemoryDbContext();
+        var eventHub = CreateEventHub(dbContext);
+
+        var request = new CreateEventRequest
+        {
+            Event = new EventProto
+            {
+                Title = "Bad Recurrence",
+                Category = "Family",
+                Start = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(1))
+            }
+        };
+        request.Event.Rrules.Add("FREQ=NOT_A_FREQUENCY");
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => eventHub.CreateEvent(request, null!));
+
+        Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
+        Assert.Empty(dbContext.Events);
     }
 }

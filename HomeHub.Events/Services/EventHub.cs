@@ -2,40 +2,49 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using HomeHub.Events.Contexts;
 using HomeHub.Events.Mappers;
+using HomeHub.Users.Security;
 using Ical.Net;
 using Ical.Net.DataTypes;
 using Microsoft.EntityFrameworkCore;
+using GrpcStatusCode = Grpc.Core.StatusCode;
 
 namespace HomeHub.Events.Services;
 
 public class EventHub : EventService.EventServiceBase
 {
-    private readonly EventDbContext _dbContext;
+    private readonly IEventDbContext _dbContext;
+    private readonly CurrentUser _currentUser;
 
-    public EventHub(EventDbContext dbContext)
+    public EventHub(IEventDbContext dbContext, CurrentUser currentUser)
     {
         _dbContext = dbContext;
+        _currentUser = currentUser;
     }
 
     public override async Task<CreateEventResponse> CreateEvent(CreateEventRequest request, ServerCallContext context)
     {
         if (request.Event == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event cannot be null"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event cannot be null"));
         }
+
+        var start = RequireStart(request.Event);
+        var end = request.Event.End?.ToDateTime();
+        ValidateDates(start, end);
+        ValidateRrules(request.Event.Rrules);
 
         var eventEntity = new Entities.Event
         {
             Id = Guid.NewGuid(),
             Title = request.Event.Title,
             Description = request.Event.Description,
-            Organizer = Guid.Parse(request.Event.Organizer),
-            Start = request.Event.Start?.ToDateTime(),
-            End = request.Event.End?.ToDateTime(),
-            Rrules = request.Event.Rrules?.ToList().ToArray(),
+            Organizer = _currentUser.RequireUserId(),
+            Start = start,
+            End = end,
+            Rrules = request.Event.Rrules.ToArray(),
             Category = request.Event.Category,
             AllDay = request.Event.AllDay,
-            ExceptDates = request.Event.ExceptDates?.Select(ts => ts.ToDateTime()).ToArray()
+            ExceptDates = request.Event.ExceptDates.Select(ts => ts.ToDateTime()).ToArray()
         };
 
         _dbContext.Events.Add(eventEntity);
@@ -51,18 +60,18 @@ public class EventHub : EventService.EventServiceBase
     {
         if (string.IsNullOrEmpty(request.Id))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID cannot be null or empty"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID cannot be null or empty"));
         }
 
         if (!Guid.TryParse(request.Id, out var eventId))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID must be a valid GUID"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID must be a valid GUID"));
         }
 
         var eventEntity = await _dbContext.Events.FindAsync(eventId);
         if (eventEntity == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.NotFound, $"Event with ID {eventId} not found"));
+            throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Event with ID {eventId} not found"));
         }
 
         var protoEvent = new Event
@@ -71,7 +80,7 @@ public class EventHub : EventService.EventServiceBase
             Title = eventEntity.Title,
             Description = eventEntity.Description ?? string.Empty,
             Organizer = eventEntity.Organizer.ToString(),
-            Start = eventEntity.Start.HasValue ? Timestamp.FromDateTime(eventEntity.Start.Value) : null,
+            Start = Timestamp.FromDateTime(eventEntity.Start),
             End = eventEntity.End.HasValue ? Timestamp.FromDateTime(eventEntity.End.Value) : null,
             Category = eventEntity.Category,
             AllDay = eventEntity.AllDay
@@ -97,23 +106,32 @@ public class EventHub : EventService.EventServiceBase
     {
         if (request.Range == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Date range cannot be null"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Date range cannot be null"));
+        }
+
+        if (request.Range.Start == null || request.Range.End == null)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Date range start and end are required"));
         }
 
         var rangeStart = request.Range.Start.ToDateTime();
         var rangeEnd = request.Range.End.ToDateTime();
 
-        // Load recurring events that could have occurrences in range
+        if (rangeStart >= rangeEnd)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Date range start must be before end"));
+        }
+
+        // Recurring events only need their DTSTART inside the range; End is the end of
+        // one occurrence, not the end of the series.
         var recurringEvents = await _dbContext.Events
             .Where(e => e.Rrules != null && e.Rrules.Length > 0 &&
-                        (e.End == null || e.End >= rangeStart) &&
-                        (!e.Start.HasValue || e.Start <= rangeEnd))
+                        e.Start <= rangeEnd)
             .ToListAsync();
 
         // Load non-recurring events within the specified range
         var nonRecurringEvents = await _dbContext.Events
             .Where(e => (e.Rrules == null || e.Rrules.Length == 0) &&
-                        e.Start.HasValue &&
                         e.Start <= rangeEnd &&
                         (!e.End.HasValue || e.End >= rangeStart))
             .ToListAsync();
@@ -139,10 +157,10 @@ public class EventHub : EventService.EventServiceBase
                     occurrences.Add((evt, occStart, occEnd));
                 }
             }
-            else if (evt.Start.HasValue && evt.Start >= rangeStart && evt.Start <= rangeEnd)
+            else if (evt.Start >= rangeStart && evt.Start <= rangeEnd)
             {
                 // Non-recurring event in range
-                occurrences.Add((evt, evt.Start.Value, evt.End));
+                occurrences.Add((evt, evt.Start, evt.End));
             }
         }
 
@@ -167,18 +185,18 @@ public class EventHub : EventService.EventServiceBase
     {
         if (string.IsNullOrEmpty(request.Id))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID cannot be null or empty"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID cannot be null or empty"));
         }
 
         if (!Guid.TryParse(request.Id, out var eventId))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID must be a valid GUID"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID must be a valid GUID"));
         }
 
         var eventEntity = await _dbContext.Events.FindAsync(eventId);
         if (eventEntity == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.NotFound, $"Event with ID {eventId} not found"));
+            throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Event with ID {eventId} not found"));
         }
 
         _dbContext.Events.Remove(eventEntity);
@@ -191,23 +209,23 @@ public class EventHub : EventService.EventServiceBase
     {
         if (string.IsNullOrEmpty(request.EventId))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID cannot be null or empty"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID cannot be null or empty"));
         }
 
         if (!Guid.TryParse(request.EventId, out var eventId))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID must be a valid GUID"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID must be a valid GUID"));
         }
 
         if (request.OccurrenceDate == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Occurrence date cannot be null"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Occurrence date cannot be null"));
         }
 
         var eventEntity = await _dbContext.Events.FindAsync(eventId);
         if (eventEntity == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.NotFound, $"Event with ID {eventId} not found"));
+            throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Event with ID {eventId} not found"));
         }
 
         var occurrenceDateTime = request.OccurrenceDate.ToDateTime();
@@ -236,41 +254,84 @@ public class EventHub : EventService.EventServiceBase
 
     public override async Task<Empty> UpdateEvent(UpdateEventRequest request, ServerCallContext context)
     {
+        if (request.Event == null)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event cannot be null"));
+        }
+
         if (string.IsNullOrEmpty(request.Event.Id))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID cannot be null or empty"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID cannot be null or empty"));
         }
 
         if (!Guid.TryParse(request.Event.Id, out var eventId))
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event ID must be a valid GUID"));
-        }
-
-        if (request.Event == null)
-        {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.InvalidArgument, "Event cannot be null"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event ID must be a valid GUID"));
         }
 
         var eventEntity = await _dbContext.Events.FindAsync(eventId);
         if (eventEntity == null)
         {
-            throw new RpcException(new Status(Grpc.Core.StatusCode.NotFound, $"Event with ID {eventId} not found"));
+            throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Event with ID {eventId} not found"));
         }
 
-        // Update event fields
+        var start = RequireStart(request.Event);
+        var end = request.Event.End?.ToDateTime();
+        ValidateDates(start, end);
+        ValidateRrules(request.Event.Rrules);
+
+        // Organizer is server-managed and stays with the event's creator.
         eventEntity.Title = request.Event.Title;
         eventEntity.Description = request.Event.Description;
-        eventEntity.Organizer = Guid.Parse(request.Event.Organizer);
-        eventEntity.Start = request.Event.Start?.ToDateTime();
-        eventEntity.End = request.Event.End?.ToDateTime();
-        eventEntity.Rrules = request.Event.Rrules?.ToList().ToArray();
+        eventEntity.Start = start;
+        eventEntity.End = end;
+        eventEntity.Rrules = request.Event.Rrules.ToArray();
         eventEntity.Category = request.Event.Category;
         eventEntity.AllDay = request.Event.AllDay;
-        eventEntity.ExceptDates = request.Event.ExceptDates?.Select(ts => ts.ToDateTime()).ToArray();
+        eventEntity.ExceptDates = request.Event.ExceptDates.Select(ts => ts.ToDateTime()).ToArray();
 
         _dbContext.Events.Update(eventEntity);
         await _dbContext.SaveChangesAsync();
 
         return new Empty();
+    }
+
+    private static DateTime RequireStart(Event protoEvent)
+    {
+        var start = protoEvent.Start?.ToDateTime();
+        if (start == null)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event start is required"));
+        }
+
+        return start.Value;
+    }
+
+    private static void ValidateDates(DateTime start, DateTime? end)
+    {
+        if (end.HasValue && end.Value < start)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Event end must be on or after its start"));
+        }
+    }
+
+    private static void ValidateRrules(IEnumerable<string> rrules)
+    {
+        foreach (var rrule in rrules)
+        {
+            if (string.IsNullOrWhiteSpace(rrule))
+            {
+                throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "RRULE cannot be empty"));
+            }
+
+            try
+            {
+                _ = new RecurrencePattern(rrule);
+            }
+            catch (Exception)
+            {
+                throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, $"Invalid RRULE: {rrule}"));
+            }
+        }
     }
 }

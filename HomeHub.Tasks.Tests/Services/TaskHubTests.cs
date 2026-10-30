@@ -1,7 +1,8 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using HumeHub.Tasks.Contexts;
+using HomeHub.Hub.Contexts;
 using HomeHub.Tasks.Services;
+using HomeHub.Users.Security;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using TaskEntity = HumeHub.Tasks.Entities.Task;
@@ -15,14 +16,21 @@ namespace HomeHub.Tasks.Tests.Services;
 
 public class TaskHubTests
 {
-    private TaskDbContext CreateInMemoryDbContext()
+    private static readonly Guid User1 = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid User2 = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid User3 = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
+    private HubDbContext CreateInMemoryDbContext()
     {
-        var options = new DbContextOptionsBuilder<TaskDbContext>()
+        var options = new DbContextOptionsBuilder<HubDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        return new TaskDbContext(options);
+        return new HubDbContext(options);
     }
+
+    private static TaskHub CreateTaskHub(HubDbContext dbContext, Guid? userId = null) =>
+        new(dbContext, new CurrentUser { UserId = userId ?? User1, FullName = "Test User" });
 
     #region Task Tests
 
@@ -31,7 +39,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var createTaskRequest = new CreateTaskRequest
         {
@@ -39,8 +47,8 @@ public class TaskHubTests
             {
                 Title = "Test Task",
                 Description = "Test Description",
-                CreatedBy = "user1",
-                AssignedTo = "user2",
+                CreatedBy = User1.ToString(),
+                AssignedTo = User2.ToString(),
                 Done = false
             }
         };
@@ -57,8 +65,8 @@ public class TaskHubTests
         Assert.NotNull(savedTask);
         Assert.Equal("Test Task", savedTask.Title);
         Assert.Equal("Test Description", savedTask.Description);
-        Assert.Equal("user1", savedTask.CreatedBy);
-        Assert.Equal("user2", savedTask.AssignedTo);
+        Assert.Equal(User1, savedTask.CreatedBy);
+        Assert.Equal(User2, savedTask.AssignedTo);
         Assert.False(savedTask.Done);
     }
 
@@ -67,7 +75,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var createTaskRequest = new CreateTaskRequest
         {
@@ -86,7 +94,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var taskId = Guid.NewGuid();
         var taskEntity = new TaskEntity
@@ -94,8 +102,8 @@ public class TaskHubTests
             Id = taskId,
             Title = "Test Task",
             Description = "Test Description",
-            CreatedBy = "user1",
-            AssignedTo = "user2",
+            CreatedBy = User1,
+            AssignedTo = User2,
             Done = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -116,8 +124,8 @@ public class TaskHubTests
         Assert.Equal(taskId.ToString(), response.Task.Id);
         Assert.Equal("Test Task", response.Task.Title);
         Assert.Equal("Test Description", response.Task.Description);
-        Assert.Equal("user1", response.Task.CreatedBy);
-        Assert.Equal("user2", response.Task.AssignedTo);
+        Assert.Equal(User1.ToString(), response.Task.CreatedBy);
+        Assert.Equal(User2.ToString(), response.Task.AssignedTo);
         Assert.False(response.Task.Done);
     }
 
@@ -126,7 +134,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var getTaskRequest = new GetTaskRequest
         {
@@ -145,7 +153,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var nonExistentId = Guid.NewGuid().ToString();
 
@@ -166,7 +174,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var taskId = Guid.NewGuid();
         var taskEntity = new TaskEntity
@@ -174,8 +182,8 @@ public class TaskHubTests
             Id = taskId,
             Title = "Original Title",
             Description = "Original Description",
-            CreatedBy = "user1",
-            AssignedTo = "user2",
+            CreatedBy = User1,
+            AssignedTo = User2,
             Done = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -190,8 +198,8 @@ public class TaskHubTests
                 Id = taskId.ToString(),
                 Title = "Updated Title",
                 Description = "Updated Description",
-                CreatedBy = "user1",
-                AssignedTo = "user3",
+                CreatedBy = User1.ToString(),
+                AssignedTo = User3.ToString(),
                 Done = true,
                 DoneAt = Timestamp.FromDateTime(DateTime.UtcNow)
             }
@@ -205,9 +213,10 @@ public class TaskHubTests
         Assert.NotNull(updatedTask);
         Assert.Equal("Updated Title", updatedTask.Title);
         Assert.Equal("Updated Description", updatedTask.Description);
-        Assert.Equal("user3", updatedTask.AssignedTo);
+        Assert.Equal(User3, updatedTask.AssignedTo);
         Assert.True(updatedTask.Done);
         Assert.NotNull(updatedTask.DoneAt);
+        Assert.Equal(User1, updatedTask.CreatedBy);
     }
 
     [Fact]
@@ -215,7 +224,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var updateTaskRequest = new UpdateTaskRequest
         {
@@ -223,7 +232,7 @@ public class TaskHubTests
             {
                 Id = Guid.NewGuid().ToString(),
                 Title = "Updated Title",
-                CreatedBy = "user1"
+                CreatedBy = User1.ToString()
             }
         };
 
@@ -239,14 +248,14 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var taskId = Guid.NewGuid();
         var taskEntity = new TaskEntity
         {
             Id = taskId,
             Title = "Test Task",
-            CreatedBy = "user1",
+            CreatedBy = User1,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -271,7 +280,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var deleteTaskRequest = new DeleteTaskRequest
         {
@@ -290,11 +299,11 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
-        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = "user1", AssignedTo = "user2", CreatedAt = DateTime.UtcNow };
-        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = "user1", AssignedTo = "user3", CreatedAt = DateTime.UtcNow };
-        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = "user1", AssignedTo = "user2", CreatedAt = DateTime.UtcNow };
+        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = User1, AssignedTo = User2, CreatedAt = DateTime.UtcNow };
+        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = User1, AssignedTo = User3, CreatedAt = DateTime.UtcNow };
+        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = User1, AssignedTo = User2, CreatedAt = DateTime.UtcNow };
 
         dbContext.Tasks.AddRange(task1, task2, task3);
         await dbContext.SaveChangesAsync();
@@ -313,18 +322,18 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
-        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = "user1", AssignedTo = "user2", CreatedAt = DateTime.UtcNow };
-        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = "user1", AssignedTo = "user3", CreatedAt = DateTime.UtcNow };
-        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = "user1", AssignedTo = "user2", CreatedAt = DateTime.UtcNow };
+        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = User1, AssignedTo = User2, CreatedAt = DateTime.UtcNow };
+        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = User1, AssignedTo = User3, CreatedAt = DateTime.UtcNow };
+        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = User1, AssignedTo = User2, CreatedAt = DateTime.UtcNow };
 
         dbContext.Tasks.AddRange(task1, task2, task3);
         await dbContext.SaveChangesAsync();
 
         var listTasksRequest = new ListTasksRequest
         {
-            AssignedTo = "user2"
+            AssignedTo = User2.ToString()
         };
 
         // Act
@@ -332,7 +341,7 @@ public class TaskHubTests
 
         // Assert
         Assert.Equal(2, response.Tasks.Count);
-        Assert.All(response.Tasks, t => Assert.Equal("user2", t.AssignedTo));
+        Assert.All(response.Tasks, t => Assert.Equal(User2.ToString(), t.AssignedTo));
     }
 
     [Fact]
@@ -340,11 +349,11 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
-        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = "user1", Done = true, DoneAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
-        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = "user1", Done = false, CreatedAt = DateTime.UtcNow };
-        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = "user1", Done = true, DoneAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
+        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = User1, Done = true, DoneAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
+        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = User1, Done = false, CreatedAt = DateTime.UtcNow };
+        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = User1, Done = true, DoneAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
 
         dbContext.Tasks.AddRange(task1, task2, task3);
         await dbContext.SaveChangesAsync();
@@ -363,16 +372,17 @@ public class TaskHubTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task GetMyTasks_ReturnsTasksForUser()
+    public async System.Threading.Tasks.Task GetMyTasks_ReturnsTasksAssignedToCurrentUser()
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
-        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = "user1", CreatedAt = DateTime.UtcNow };
-        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = "user1", CreatedAt = DateTime.UtcNow };
+        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = User2, AssignedTo = User1, CreatedAt = DateTime.UtcNow };
+        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = User1, AssignedTo = User1, CreatedAt = DateTime.UtcNow };
+        var task3 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 3", CreatedBy = User1, AssignedTo = User2, CreatedAt = DateTime.UtcNow };
 
-        dbContext.Tasks.AddRange(task1, task2);
+        dbContext.Tasks.AddRange(task1, task2, task3);
         await dbContext.SaveChangesAsync();
 
         var getMyTasksRequest = new GetMyTasksRequest();
@@ -382,6 +392,7 @@ public class TaskHubTests
 
         // Assert
         Assert.Equal(2, response.Tasks.Count);
+        Assert.All(response.Tasks, t => Assert.Equal(User1.ToString(), t.AssignedTo));
     }
 
     #endregion
@@ -393,7 +404,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var createRecurringTaskRequest = new CreateRecurringTaskRequest
         {
@@ -401,8 +412,8 @@ public class TaskHubTests
             {
                 Title = "Recurring Task",
                 Description = "Weekly Meeting",
-                CreatedBy = "user1",
-                AssignedTo = "user2",
+                CreatedBy = User1.ToString(),
+                AssignedTo = User2.ToString(),
                 Rrule = "FREQ=WEEKLY;BYDAY=MO,WE,FR"
             }
         };
@@ -418,6 +429,32 @@ public class TaskHubTests
         Assert.NotNull(savedRecurringTask);
         Assert.Equal("Recurring Task", savedRecurringTask.Title);
         Assert.Equal("FREQ=WEEKLY;BYDAY=MO,WE,FR", savedRecurringTask.RRule);
+        Assert.Equal(User1, savedRecurringTask.CreatedBy);
+        Assert.Equal(User2, savedRecurringTask.AssignedTo);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task CreateRecurringTask_WithInvalidRRule_ThrowsInvalidArgument()
+    {
+        // Arrange
+        var dbContext = CreateInMemoryDbContext();
+        var taskHub = CreateTaskHub(dbContext);
+
+        var createRecurringTaskRequest = new CreateRecurringTaskRequest
+        {
+            RecurringTask = new RecurringTaskProto
+            {
+                Title = "Recurring Task",
+                Rrule = "FREQ=NOT_A_FREQUENCY"
+            }
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => taskHub.CreateRecurringTask(createRecurringTaskRequest, null!));
+
+        Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
+        Assert.Empty(dbContext.RecurringTasks);
     }
 
     [Fact]
@@ -425,14 +462,14 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var createRecurringTaskRequest = new CreateRecurringTaskRequest
         {
             RecurringTask = new RecurringTaskProto
             {
                 Title = "Recurring Task",
-                CreatedBy = "user1",
+                CreatedBy = User1.ToString(),
                 Rrule = ""
             }
         };
@@ -449,7 +486,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var recurringTaskId = Guid.NewGuid();
         var recurringTaskEntity = new RecurringTaskEntity
@@ -457,14 +494,14 @@ public class TaskHubTests
             Id = recurringTaskId,
             Title = "Recurring Task",
             Description = "Weekly Meeting",
-            CreatedBy = "user1",
-            AssignedTo = "user2",
+            CreatedBy = User1,
+            AssignedTo = User2,
             RRule = "FREQ=WEEKLY;BYDAY=MO",
             CreatedAt = DateTime.UtcNow
         };
 
-        var instance1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Recurring Task", CreatedBy = "user1", RecurringTaskId = recurringTaskId, CreatedAt = DateTime.UtcNow };
-        var instance2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Recurring Task", CreatedBy = "user1", RecurringTaskId = recurringTaskId, CreatedAt = DateTime.UtcNow };
+        var instance1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Recurring Task", CreatedBy = User1, RecurringTaskId = recurringTaskId, CreatedAt = DateTime.UtcNow };
+        var instance2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Recurring Task", CreatedBy = User1, RecurringTaskId = recurringTaskId, CreatedAt = DateTime.UtcNow };
 
         dbContext.RecurringTasks.Add(recurringTaskEntity);
         dbContext.Tasks.AddRange(instance1, instance2);
@@ -490,7 +527,7 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var getRecurringTaskRequest = new GetRecurringTaskRequest
         {
@@ -509,14 +546,14 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var recurringTaskId = Guid.NewGuid();
         var recurringTaskEntity = new RecurringTaskEntity
         {
             Id = recurringTaskId,
             Title = "Original Title",
-            CreatedBy = "user1",
+            CreatedBy = User1,
             RRule = "FREQ=WEEKLY;BYDAY=MO",
             CreatedAt = DateTime.UtcNow
         };
@@ -530,8 +567,8 @@ public class TaskHubTests
             {
                 Id = recurringTaskId.ToString(),
                 Title = "Updated Title",
-                CreatedBy = "user1",
-                AssignedTo = "user3",
+                CreatedBy = User1.ToString(),
+                AssignedTo = User3.ToString(),
                 Rrule = "FREQ=DAILY"
             }
         };
@@ -543,7 +580,7 @@ public class TaskHubTests
         var updatedRecurringTask = await dbContext.RecurringTasks.FindAsync(recurringTaskId);
         Assert.NotNull(updatedRecurringTask);
         Assert.Equal("Updated Title", updatedRecurringTask.Title);
-        Assert.Equal("user3", updatedRecurringTask.AssignedTo);
+        Assert.Equal(User3, updatedRecurringTask.AssignedTo);
         Assert.Equal("FREQ=DAILY", updatedRecurringTask.RRule);
     }
 
@@ -552,14 +589,14 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var recurringTaskId = Guid.NewGuid();
         var recurringTaskEntity = new RecurringTaskEntity
         {
             Id = recurringTaskId,
             Title = "Recurring Task",
-            CreatedBy = "user1",
+            CreatedBy = User1,
             RRule = "FREQ=WEEKLY",
             CreatedAt = DateTime.UtcNow
         };
@@ -585,19 +622,19 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var recurringTaskId = Guid.NewGuid();
         var recurringTaskEntity = new RecurringTaskEntity
         {
             Id = recurringTaskId,
             Title = "Recurring Task",
-            CreatedBy = "user1",
+            CreatedBy = User1,
             RRule = "FREQ=WEEKLY",
             CreatedAt = DateTime.UtcNow
         };
 
-        var instance = new TaskEntity { Id = Guid.NewGuid(), Title = "Task Instance", CreatedBy = "user1", RecurringTaskId = recurringTaskId, CreatedAt = DateTime.UtcNow };
+        var instance = new TaskEntity { Id = Guid.NewGuid(), Title = "Task Instance", CreatedBy = User1, RecurringTaskId = recurringTaskId, CreatedAt = DateTime.UtcNow };
 
         dbContext.RecurringTasks.Add(recurringTaskEntity);
         dbContext.Tasks.Add(instance);
@@ -623,10 +660,10 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
-        var rt1 = new RecurringTaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = "user1", RRule = "FREQ=WEEKLY", CreatedAt = DateTime.UtcNow };
-        var rt2 = new RecurringTaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = "user1", RRule = "FREQ=DAILY", CreatedAt = DateTime.UtcNow };
+        var rt1 = new RecurringTaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = User1, RRule = "FREQ=WEEKLY", CreatedAt = DateTime.UtcNow };
+        var rt2 = new RecurringTaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = User1, RRule = "FREQ=DAILY", CreatedAt = DateTime.UtcNow };
 
         dbContext.RecurringTasks.AddRange(rt1, rt2);
         await dbContext.SaveChangesAsync();
@@ -649,11 +686,11 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var now = DateTime.UtcNow;
-        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = "user1", Done = false, CreatedAt = now };
-        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = "user1", Done = false, CreatedAt = now.AddDays(5) };
+        var task1 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 1", CreatedBy = User1, Done = false, CreatedAt = now };
+        var task2 = new TaskEntity { Id = Guid.NewGuid(), Title = "Task 2", CreatedBy = User1, Done = false, CreatedAt = now.AddDays(5) };
 
         dbContext.Tasks.AddRange(task1, task2);
         await dbContext.SaveChangesAsync();
@@ -680,11 +717,11 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var now = DateTime.UtcNow;
-        var doneTaskInRange = new TaskEntity { Id = Guid.NewGuid(), Title = "Done Task", CreatedBy = "user1", Done = true, DoneAt = now.AddDays(3), CreatedAt = now };
-        var doneTaskOutsideRange = new TaskEntity { Id = Guid.NewGuid(), Title = "Old Done Task", CreatedBy = "user1", Done = true, DoneAt = now.AddDays(-10), CreatedAt = now.AddDays(-10) };
+        var doneTaskInRange = new TaskEntity { Id = Guid.NewGuid(), Title = "Done Task", CreatedBy = User1, Done = true, DoneAt = now.AddDays(3), CreatedAt = now };
+        var doneTaskOutsideRange = new TaskEntity { Id = Guid.NewGuid(), Title = "Old Done Task", CreatedBy = User1, Done = true, DoneAt = now.AddDays(-10), CreatedAt = now.AddDays(-10) };
 
         dbContext.Tasks.AddRange(doneTaskInRange, doneTaskOutsideRange);
         await dbContext.SaveChangesAsync();
@@ -708,11 +745,61 @@ public class TaskHubTests
     }
 
     [Fact]
+    public async System.Threading.Tasks.Task GetTasksInRange_WithCompletedRecurringInstanceAcrossDays_ReturnsInstanceOnce()
+    {
+        // Arrange
+        var dbContext = CreateInMemoryDbContext();
+        var taskHub = CreateTaskHub(dbContext);
+
+        var occurrence = DateTime.UtcNow.Date.AddDays(-2).AddHours(9);
+        var recurringTask = new RecurringTaskEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Water plants",
+            CreatedBy = User1,
+            RRule = "FREQ=DAILY",
+            CreatedAt = occurrence
+        };
+        var completedInstance = new TaskEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Water plants",
+            CreatedBy = User1,
+            RecurringTaskId = recurringTask.Id,
+            Done = true,
+            // Checked off days after the occurrence it represents.
+            DoneAt = DateTime.UtcNow,
+            CreatedAt = occurrence
+        };
+
+        dbContext.RecurringTasks.Add(recurringTask);
+        dbContext.Tasks.Add(completedInstance);
+        await dbContext.SaveChangesAsync();
+
+        var getTasksInRangeRequest = new GetTasksInRangeRequest
+        {
+            Range = new DateRange
+            {
+                Start = Timestamp.FromDateTime(occurrence.Date),
+                End = Timestamp.FromDateTime(occurrence.Date.AddDays(1))
+            }
+        };
+
+        // Act
+        var response = await taskHub.GetTasksInRange(getTasksInRangeRequest, null!);
+
+        // Assert
+        var instance = Assert.Single(response.Tasks.Where(t => t.Title == "Water plants"));
+        Assert.True(instance.Done);
+        Assert.Equal(completedInstance.Id.ToString(), instance.Id);
+    }
+
+    [Fact]
     public async System.Threading.Tasks.Task GetTasksInRange_WithNullRange_ThrowsException()
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var getTasksInRangeRequest = new GetTasksInRangeRequest
         {
@@ -731,12 +818,12 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var now = DateTime.UtcNow;
 
         // Regular task
-        var regularTask = new TaskEntity { Id = Guid.NewGuid(), Title = "One-time Task", CreatedBy = "user1", Done = false, CreatedAt = now };
+        var regularTask = new TaskEntity { Id = Guid.NewGuid(), Title = "One-time Task", CreatedBy = User1, Done = false, CreatedAt = now };
         dbContext.Tasks.Add(regularTask);
 
         await dbContext.SaveChangesAsync();
@@ -764,11 +851,11 @@ public class TaskHubTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext();
-        var taskHub = new TaskHub(dbContext);
+        var taskHub = CreateTaskHub(dbContext);
 
         var now = DateTime.UtcNow;
         // Task created outside the query range and marked done outside range
-        var task = new TaskEntity { Id = Guid.NewGuid(), Title = "Task", CreatedBy = "user1", Done = true, DoneAt = now.AddDays(10), CreatedAt = now.AddDays(10) };
+        var task = new TaskEntity { Id = Guid.NewGuid(), Title = "Task", CreatedBy = User1, Done = true, DoneAt = now.AddDays(10), CreatedAt = now.AddDays(10) };
         dbContext.Tasks.Add(task);
         await dbContext.SaveChangesAsync();
 

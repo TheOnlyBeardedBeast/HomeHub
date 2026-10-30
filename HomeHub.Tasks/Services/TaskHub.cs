@@ -1,6 +1,6 @@
-
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using HomeHub.Users.Security;
 using HumeHub.Tasks.Contexts;
 using HumeHub.Tasks.Mappers;
 using HumeHub.Tasks.Utils;
@@ -11,11 +11,13 @@ namespace HomeHub.Tasks.Services;
 
 public class TaskHub : TaskService.TaskServiceBase
 {
-    private readonly TaskDbContext _dbContext;
+    private readonly ITaskDbContext _dbContext;
+    private readonly CurrentUser _currentUser;
 
-    public TaskHub(TaskDbContext dbContext)
+    public TaskHub(ITaskDbContext dbContext, CurrentUser currentUser)
     {
         _dbContext = dbContext;
+        _currentUser = currentUser;
     }
 
     #region Task Operations
@@ -32,11 +34,12 @@ public class TaskHub : TaskService.TaskServiceBase
             Id = Guid.NewGuid(),
             Title = request.Task.Title,
             Description = request.Task.Description,
-            CreatedBy = request.Task.CreatedBy,
-            AssignedTo = request.Task.AssignedTo,
+            CreatedBy = _currentUser.RequireUserId(),
+            AssignedTo = ParseOptionalUserId(request.Task.AssignedTo, "AssignedTo"),
             Done = request.Task.Done,
-            DoneAt = request.Task.DoneAt?.ToDateTime(),
-            RecurringTaskId = string.IsNullOrEmpty(request.Task.RecurringTaskId) ? null : Guid.Parse(request.Task.RecurringTaskId)
+            DoneAt = request.Task.Done ? DateTime.UtcNow : null,
+            CreatedAt = request.Task.CreatedAt?.ToDateTime() ?? DateTime.UtcNow,
+            RecurringTaskId = ParseOptionalUserId(request.Task.RecurringTaskId, "RecurringTaskId")
         };
 
         _dbContext.Tasks.Add(taskEntity);
@@ -66,11 +69,9 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Task with ID {taskId} not found"));
         }
 
-        var protoTask = TaskMappers.MapToProtoTask(taskEntity);
-
         return new GetTaskResponse
         {
-            Task = protoTask
+            Task = TaskMappers.MapToProtoTask(taskEntity)
         };
     }
 
@@ -99,10 +100,11 @@ public class TaskHub : TaskService.TaskServiceBase
 
         taskEntity.Title = request.Task.Title;
         taskEntity.Description = request.Task.Description;
-        taskEntity.CreatedBy = request.Task.CreatedBy;
-        taskEntity.AssignedTo = request.Task.AssignedTo;
+        taskEntity.AssignedTo = ParseOptionalUserId(request.Task.AssignedTo, "AssignedTo");
         taskEntity.Done = request.Task.Done;
-        taskEntity.DoneAt = request.Task.DoneAt?.ToDateTime();
+        taskEntity.DoneAt = request.Task.Done
+            ? taskEntity.DoneAt ?? DateTime.UtcNow
+            : null;
 
         _dbContext.Tasks.Update(taskEntity);
         await _dbContext.SaveChangesAsync();
@@ -138,9 +140,10 @@ public class TaskHub : TaskService.TaskServiceBase
     {
         var query = _dbContext.Tasks.AsQueryable();
 
-        if (!string.IsNullOrEmpty(request.AssignedTo))
+        var assignedTo = ParseOptionalUserId(request.AssignedTo, "AssignedTo");
+        if (assignedTo.HasValue)
         {
-            query = query.Where(t => t.AssignedTo == request.AssignedTo);
+            query = query.Where(t => t.AssignedTo == assignedTo);
         }
 
         if (request.DoneOnly)
@@ -148,7 +151,7 @@ public class TaskHub : TaskService.TaskServiceBase
             query = query.Where(t => t.Done);
         }
 
-        var tasks = await query.ToListAsync();
+        var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
         var response = new ListTasksResponse();
         response.Tasks.AddRange(tasks.Select(TaskMappers.MapToProtoTask));
 
@@ -157,15 +160,15 @@ public class TaskHub : TaskService.TaskServiceBase
 
     public override async Task<GetMyTasksResponse> GetMyTasks(GetMyTasksRequest request, ServerCallContext context)
     {
-        // Note: In a real implementation, you'd get the current user from context
-        var query = _dbContext.Tasks.AsQueryable();
+        var userId = _currentUser.RequireUserId();
+        var query = _dbContext.Tasks.Where(t => t.AssignedTo == userId);
 
         if (request.DoneOnly)
         {
             query = query.Where(t => t.Done);
         }
 
-        var tasks = await query.ToListAsync();
+        var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
         var response = new GetMyTasksResponse();
         response.Tasks.AddRange(tasks.Select(TaskMappers.MapToProtoTask));
 
@@ -183,9 +186,9 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "RecurringTask cannot be null"));
         }
 
-        if (string.IsNullOrEmpty(request.RecurringTask.Rrule))
+        if (!RecurrenceUtils.IsValidRRule(request.RecurringTask.Rrule))
         {
-            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "RRule cannot be null or empty"));
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "RRule must be a valid recurrence rule"));
         }
 
         var recurringTaskEntity = new HumeHub.Tasks.Entities.RecurringTask
@@ -193,8 +196,8 @@ public class TaskHub : TaskService.TaskServiceBase
             Id = Guid.NewGuid(),
             Title = request.RecurringTask.Title,
             Description = request.RecurringTask.Description,
-            CreatedBy = request.RecurringTask.CreatedBy,
-            AssignedTo = request.RecurringTask.AssignedTo,
+            CreatedBy = _currentUser.RequireUserId(),
+            AssignedTo = ParseOptionalUserId(request.RecurringTask.AssignedTo, "AssignedTo"),
             RRule = request.RecurringTask.Rrule,
             CreatedAt = request.RecurringTask.CreatedAt?.ToDateTime() ?? DateTime.UtcNow
         };
@@ -229,10 +232,9 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"RecurringTask with ID {recurringTaskId} not found"));
         }
 
-        var protoRecurringTask = TaskMappers.MapToProtoRecurringTask(recurringTaskEntity);
         var response = new GetRecurringTaskResponse
         {
-            RecurringTask = protoRecurringTask
+            RecurringTask = TaskMappers.MapToProtoRecurringTask(recurringTaskEntity)
         };
 
         response.Instances.AddRange(recurringTaskEntity.Instances.Select(TaskMappers.MapToProtoTask));
@@ -257,16 +259,21 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "RecurringTask ID must be a valid GUID"));
         }
 
+        if (!RecurrenceUtils.IsValidRRule(request.RecurringTask.Rrule))
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "RRule must be a valid recurrence rule"));
+        }
+
         var recurringTaskEntity = await _dbContext.RecurringTasks.FindAsync(recurringTaskId);
         if (recurringTaskEntity == null)
         {
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"RecurringTask with ID {recurringTaskId} not found"));
         }
 
+        // CreatedBy and CreatedAt (the recurrence start) are immutable.
         recurringTaskEntity.Title = request.RecurringTask.Title;
         recurringTaskEntity.Description = request.RecurringTask.Description;
-        recurringTaskEntity.CreatedBy = request.RecurringTask.CreatedBy;
-        recurringTaskEntity.AssignedTo = request.RecurringTask.AssignedTo;
+        recurringTaskEntity.AssignedTo = ParseOptionalUserId(request.RecurringTask.AssignedTo, "AssignedTo");
         recurringTaskEntity.RRule = request.RecurringTask.Rrule;
 
         _dbContext.RecurringTasks.Update(recurringTaskEntity);
@@ -303,12 +310,13 @@ public class TaskHub : TaskService.TaskServiceBase
     {
         var query = _dbContext.RecurringTasks.AsQueryable();
 
-        if (!string.IsNullOrEmpty(request.AssignedTo))
+        var assignedTo = ParseOptionalUserId(request.AssignedTo, "AssignedTo");
+        if (assignedTo.HasValue)
         {
-            query = query.Where(rt => rt.AssignedTo == request.AssignedTo);
+            query = query.Where(rt => rt.AssignedTo == assignedTo);
         }
 
-        var recurringTasks = await query.ToListAsync();
+        var recurringTasks = await query.OrderBy(rt => rt.Title).ToListAsync();
         var response = new ListRecurringTasksResponse();
         response.RecurringTasks.AddRange(recurringTasks.Select(TaskMappers.MapToProtoRecurringTask));
 
@@ -317,8 +325,12 @@ public class TaskHub : TaskService.TaskServiceBase
 
     public override async Task<GetMyRecurringTasksResponse> GetMyRecurringTasks(GetMyRecurringTasksRequest request, ServerCallContext context)
     {
-        // Note: In a real implementation, you'd get the current user from context
-        var recurringTasks = await _dbContext.RecurringTasks.ToListAsync();
+        var userId = _currentUser.RequireUserId();
+        var recurringTasks = await _dbContext.RecurringTasks
+            .Where(rt => rt.AssignedTo == userId)
+            .OrderBy(rt => rt.Title)
+            .ToListAsync();
+
         var response = new GetMyRecurringTasksResponse();
         response.RecurringTasks.AddRange(recurringTasks.Select(TaskMappers.MapToProtoRecurringTask));
 
@@ -332,8 +344,18 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Date range cannot be null"));
         }
 
+        if (request.Range.Start == null || request.Range.End == null)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Date range start and end are required"));
+        }
+
         var rangeStart = request.Range.Start.ToDateTime();
         var rangeEnd = request.Range.End.ToDateTime();
+
+        if (rangeStart >= rangeEnd)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "Date range start must be before end"));
+        }
 
         // Get all regular tasks (not linked to recurring tasks) that match criteria:
         // - Not done yet, OR
@@ -343,19 +365,18 @@ public class TaskHub : TaskService.TaskServiceBase
                        (!t.Done || (t.DoneAt.HasValue && t.DoneAt >= rangeStart && t.DoneAt <= rangeEnd)))
             .ToListAsync();
 
-        // Get all done instances from recurring tasks within the range (to track what's already done)
-        var doneRecurringTaskInstances = await _dbContext.Tasks
+        // Completed recurring instances are matched by their occurrence date (CreatedAt),
+        // not by when they happened to be checked off.
+        var completedRecurringInstances = await _dbContext.Tasks
             .Where(t => t.RecurringTaskId.HasValue &&
                        t.Done &&
-                       t.DoneAt.HasValue &&
-                       t.DoneAt >= rangeStart &&
-                       t.DoneAt <= rangeEnd)
+                       t.CreatedAt >= rangeStart &&
+                       t.CreatedAt <= rangeEnd)
             .ToListAsync();
 
         var response = new GetTasksInRangeResponse();
-
-        // Add regular tasks
         response.Tasks.AddRange(regularTasks.Select(TaskMappers.MapToProtoTask));
+        response.Tasks.AddRange(completedRecurringInstances.Select(TaskMappers.MapToProtoTask));
 
         // Get all recurring tasks and generate occurrences within range
         var recurringTasks = await _dbContext.RecurringTasks.ToListAsync();
@@ -366,14 +387,10 @@ public class TaskHub : TaskService.TaskServiceBase
 
             foreach (var occurrence in occurrences)
             {
-                // Check if there's a corresponding done instance from the recurring task for this specific date
-                var doneInstance = doneRecurringTaskInstances.FirstOrDefault(
-                    t => t.RecurringTaskId == recurringTask.Id &&
-                         t.DoneAt.HasValue &&
-                         t.DoneAt.Value.Date == occurrence.CreatedAt.Date);
+                var alreadyCompleted = completedRecurringInstances.Any(
+                    t => t.RecurringTaskId == recurringTask.Id && t.CreatedAt == occurrence.CreatedAt);
 
-                // Only add if there's no corresponding done instance (avoid duplication)
-                if (doneInstance == null)
+                if (!alreadyCompleted)
                 {
                     response.Tasks.Add(TaskMappers.MapToProtoTask(occurrence));
                 }
@@ -384,4 +401,19 @@ public class TaskHub : TaskService.TaskServiceBase
     }
 
     #endregion
+
+    private static Guid? ParseOptionalUserId(string? value, string fieldName)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return null;
+        }
+
+        if (!Guid.TryParse(value, out var id))
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, $"{fieldName} must be a valid user ID"));
+        }
+
+        return id;
+    }
 }

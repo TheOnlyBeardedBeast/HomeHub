@@ -1,0 +1,17 @@
+.git
+.gitignore
+.claude
+**/bin
+**/obj
+HomeHub.Client/node_modules
+HomeHub.Client/dist
+HomeHub.Hub/wwwroot
+HomeHub.Hub/appsettings.Development.json
+HomeHub.*.Tests
+artifacts
+docs
+*.db
+*.db-shm
+*.db-wal
+*.pdb
+Taskfile.yml

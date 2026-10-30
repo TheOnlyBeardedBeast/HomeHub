@@ -1,0 +1,337 @@
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  background: #f5f2ea;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  background: #000000;
+}
+
+html[data-theme='dark'] body {
+  background: #000000;
+  color: #f4f1ea;
+}
+
+html[data-theme='dark'] ::selection {
+  background: #5c2a1a;
+  color: #fff7f0;
+}
+
+html[data-theme='dark'] :focus-visible {
+  outline-color: #e87a52;
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #2c2a26;
+  border-color: #000000;
+}
+
+html[data-theme='dark'] dialog::backdrop {
+  background: rgba(0, 0, 0, 0.74);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f5f2ea;
+  color: #201e1a;
+  font-family:
+    'Inter Variable',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: #e9d3c7;
+  color: #201e1a;
+}
+
+:focus-visible {
+  outline: 2px solid #c96442;
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d7cfc0;
+  border: 3px solid #f5f2ea;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+dialog {
+  margin: auto;
+}
+
+dialog::backdrop {
+  background: rgba(32, 30, 26, 0.42);
+  backdrop-filter: blur(5px);
+}
+
+/* Markdown renders plain elements, so it is styled here rather than with StyleX. */
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.markdown-inline {
+  min-width: 0;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown pre,
+.markdown blockquote,
+.markdown table {
+  margin: 0 0 0.7em;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin: 1em 0 0.4em;
+  font-family: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  font-weight: 520;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #201e1a;
+}
+
+.markdown h1 {
+  font-size: 1.5em;
+}
+
+.markdown h2 {
+  font-size: 1.3em;
+}
+
+.markdown h3 {
+  font-size: 1.15em;
+}
+
+.markdown h4 {
+  font-size: 1em;
+}
+
+.markdown a {
+  color: #a14a2c;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown a:hover {
+  color: #c96442;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.4em;
+}
+
+.markdown li > p {
+  margin: 0;
+}
+
+.markdown li + li {
+  margin-top: 0.2em;
+}
+
+.markdown code {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: #efebdf;
+  font-family: 'SFMono-Regular', ui-monospace, 'Cascadia Code', monospace;
+  font-size: 0.9em;
+}
+
+.markdown pre {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #efebdf;
+  overflow-x: auto;
+}
+
+.markdown pre code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 0.88em;
+}
+
+.markdown blockquote {
+  padding-left: 12px;
+  border-left: 3px solid #e2dccd;
+  color: #7d7669;
+}
+
+.markdown hr {
+  margin: 1.1em 0;
+  border: 0;
+  border-top: 1px solid #e2dccd;
+}
+
+.markdown table {
+  display: block;
+  border-collapse: collapse;
+  overflow-x: auto;
+}
+
+.markdown th,
+.markdown td {
+  padding: 5px 9px;
+  border: 1px solid #e2dccd;
+  text-align: left;
+}
+
+.markdown img {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.markdown input[type='checkbox'] {
+  margin: 0 0.4em 0 0;
+  vertical-align: middle;
+}
+
+html[data-theme='dark'] .markdown h1,
+html[data-theme='dark'] .markdown h2,
+html[data-theme='dark'] .markdown h3,
+html[data-theme='dark'] .markdown h4 {
+  color: #f4f1ea;
+}
+
+html[data-theme='dark'] .markdown a {
+  color: #f0946f;
+}
+
+html[data-theme='dark'] .markdown a:hover {
+  color: #e87a52;
+}
+
+html[data-theme='dark'] .markdown code,
+html[data-theme='dark'] .markdown pre {
+  background: #181816;
+}
+
+html[data-theme='dark'] .markdown blockquote {
+  border-color: #262421;
+  color: #a49d91;
+}
+
+html[data-theme='dark'] .markdown hr,
+html[data-theme='dark'] .markdown th,
+html[data-theme='dark'] .markdown td {
+  border-color: #262421;
+}
+
+@keyframes homehub-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes homehub-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes homehub-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes homehub-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes homehub-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

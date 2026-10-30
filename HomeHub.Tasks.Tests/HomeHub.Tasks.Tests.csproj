@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <IsTestProject>true</IsTestProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HomeHub.Tasks\HomeHub.Tasks.csproj" />
+    <ProjectReference Include="..\HomeHub.Hub\HomeHub.Hub.csproj" />
   </ItemGroup>
 
 </Project>

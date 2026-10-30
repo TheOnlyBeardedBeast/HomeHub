@@ -3,7 +3,10 @@ using HomeHub.Events.Mappers;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace HomeHub.Events.Endpoints;
 
@@ -20,9 +23,10 @@ public static class EventsEndpoints
     private static async Task<IResult> GetEventsAsIcs(
         DateTime start,
         DateTime end,
-        EventDbContext dbContext,
-        ILogger<Program> logger)
+        IEventDbContext dbContext,
+        ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger(nameof(EventsEndpoints));
         try
         {
             var rangeStart = start;
@@ -33,17 +37,16 @@ public static class EventsEndpoints
                 return Results.BadRequest("Start date must be before end date");
             }
 
-            // Load recurring events that could have occurrences in range
+            // Load recurring events that could have occurrences in range. End is the end
+            // of one occurrence, so only DTSTART matters here.
             var recurringEvents = await dbContext.Events
                 .Where(e => e.Rrules != null && e.Rrules.Length > 0 &&
-                            (e.End == null || e.End > rangeStart) &&
-                            (!e.Start.HasValue || e.Start <= rangeEnd))
+                            e.Start <= rangeEnd)
                 .ToListAsync();
 
             // Load non-recurring events within the specified range
             var nonRecurringEvents = await dbContext.Events
                 .Where(e => (e.Rrules == null || e.Rrules.Length == 0) &&
-                            e.Start.HasValue &&
                             e.Start <= rangeEnd &&
                             (!e.End.HasValue || e.End >= rangeStart))
                 .ToListAsync();
@@ -83,7 +86,7 @@ public static class EventsEndpoints
                         calendar.Events.Add(occurrenceEvent);
                     }
                 }
-                else if (evt.Start.HasValue && evt.Start >= rangeStart && evt.Start <= rangeEnd)
+                else if (evt.Start >= rangeStart && evt.Start <= rangeEnd)
                 {
                     // Non-recurring event in range
                     var singleEvent = new CalendarEvent
@@ -91,8 +94,8 @@ public static class EventsEndpoints
                         Uid = $"{evt.Id}@HomeHub.local",
                         Summary = evt.Title,
                         Description = evt.Description,
-                        Start = new CalDateTime(evt.Start.Value, evt.AllDay),
-                        End = evt.End.HasValue ? new CalDateTime(evt.End.Value, evt.AllDay) : null,
+                        Start = new CalDateTime(evt.Start, !evt.AllDay),
+                        End = evt.End.HasValue ? new CalDateTime(evt.End.Value, !evt.AllDay) : null,
 
                     };
 
@@ -101,7 +104,7 @@ public static class EventsEndpoints
             }
 
             // Serialize calendar to ICS format
-            var icsContent = calendar.ToString();
+            var icsContent = new Ical.Net.Serialization.CalendarSerializer().SerializeToString(calendar);
 
             // Return as ICS file
             return Results.File(

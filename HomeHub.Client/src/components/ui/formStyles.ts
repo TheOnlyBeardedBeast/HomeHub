@@ -1,0 +1,52 @@
+import * as stylex from '@stylexjs/stylex';
+import { colors, fonts, motion, radius, shadow } from '../../styles/tokens.stylex';
+
+export const fieldStyles = stylex.create({
+  control: {
+    width: '100%',
+    height: '42px',
+    paddingInline: '13px',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceRaised,
+    color: colors.ink,
+    fontFamily: fonts.sans,
+    fontSize: '14px',
+    lineHeight: 1.4,
+    transitionProperty: 'border-color, box-shadow, background-color',
+    transitionDuration: motion.fast,
+    transitionTimingFunction: motion.ease,
+    '::placeholder': { color: colors.inkFaint },
+    ':hover': { borderColor: colors.borderStrong },
+    ':focus': { outline: 'none', borderColor: colors.accent },
+    ':focus-visible': {
+      outline: 'none',
+      borderColor: colors.accent,
+      boxShadow: shadow.ring,
+    },
+    ':disabled': { backgroundColor: colors.surfaceSunken, color: colors.inkMuted },
+  },
+  invalid: { borderColor: colors.invalidBorder },
+  textarea: { height: 'auto', minHeight: '150px', paddingBlock: '11px', resize: 'vertical' },
+  inputWrap: { position: 'relative', display: 'flex', alignItems: 'center' },
+  withStart: { paddingLeft: '38px' },
+  withEnd: { paddingRight: '44px' },
+  startIcon: {
+    position: 'absolute',
+    left: '13px',
+    display: 'inline-flex',
+    color: colors.inkFaint,
+    pointerEvents: 'none',
+  },
+  endSlot: { position: 'absolute', right: '7px', display: 'inline-flex' },
+  selectWrap: { position: 'relative', display: 'flex', alignItems: 'center' },
+  select: { appearance: 'none', paddingRight: '38px', cursor: 'pointer' },
+  chevron: {
+    position: 'absolute',
+    right: '13px',
+    color: colors.inkMuted,
+    pointerEvents: 'none',
+  },
+});

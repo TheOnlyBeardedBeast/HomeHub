@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The SPA is served as plain static files from wwwroot; the static-web-assets
+         pipeline would keep its manifest outside a single-file publish. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
+    <PackageReference Include="Grpc.AspNetCore.Web" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HomeHub.Events\HomeHub.Events.csproj" />
+    <ProjectReference Include="..\HomeHub.Integrations\HomeHub.Integrations.csproj" />
+    <ProjectReference Include="..\HomeHub.Lists\HomeHub.Lists.csproj" />
+    <ProjectReference Include="..\HomeHub.Notes\HomeHub.Notes.csproj" />
+    <ProjectReference Include="..\HomeHub.Tasks\HomeHub.Tasks.csproj" />
+    <ProjectReference Include="..\HomeHub.Users\HomeHub.Users.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Web SDK excludes wwwroot and JSON config from single-file bundles; the SPA and
+         appsettings must travel inside the executable, so opt them back in (extracted at startup). -->
+    <Content Update="wwwroot\**"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             ExcludeFromSingleFile="false" />
+    <Content Update="appsettings.json" ExcludeFromSingleFile="false" />
+    <!-- Developer secrets (weather key, admin key) stay out of the published binary. -->
+    <Content Update="appsettings.Development.json"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="Never"
+             ExcludeFromSingleFile="true" />
+    <Content Update="appsettings.Development.example.json"
+             CopyToPublishDirectory="Never"
+             ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>

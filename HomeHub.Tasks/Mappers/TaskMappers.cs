@@ -12,11 +12,20 @@ public static class TaskMappers
             Id = taskEntity.Id.ToString(),
             Title = taskEntity.Title,
             Description = taskEntity.Description ?? string.Empty,
-            CreatedBy = taskEntity.CreatedBy,
-            AssignedTo = taskEntity.AssignedTo ?? string.Empty,
+            CreatedBy = taskEntity.CreatedBy.ToString(),
             Done = taskEntity.Done,
-            RecurringTaskId = taskEntity.RecurringTaskId?.ToString() ?? string.Empty
+            CreatedAt = Timestamp.FromDateTime(taskEntity.CreatedAt)
         };
+
+        if (taskEntity.AssignedTo.HasValue)
+        {
+            protoTask.AssignedTo = taskEntity.AssignedTo.Value.ToString();
+        }
+
+        if (taskEntity.RecurringTaskId.HasValue)
+        {
+            protoTask.RecurringTaskId = taskEntity.RecurringTaskId.Value.ToString();
+        }
 
         if (taskEntity.DoneAt.HasValue)
         {
@@ -33,11 +42,15 @@ public static class TaskMappers
             Id = recurringTaskEntity.Id.ToString(),
             Title = recurringTaskEntity.Title,
             Description = recurringTaskEntity.Description ?? string.Empty,
-            CreatedBy = recurringTaskEntity.CreatedBy,
-            AssignedTo = recurringTaskEntity.AssignedTo ?? string.Empty,
+            CreatedBy = recurringTaskEntity.CreatedBy.ToString(),
             Rrule = recurringTaskEntity.RRule,
             CreatedAt = Timestamp.FromDateTime(recurringTaskEntity.CreatedAt)
         };
+
+        if (recurringTaskEntity.AssignedTo.HasValue)
+        {
+            protoRecurringTask.AssignedTo = recurringTaskEntity.AssignedTo.Value.ToString();
+        }
 
         return protoRecurringTask;
     }

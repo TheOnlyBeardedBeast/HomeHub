@@ -8,7 +8,7 @@ public class Event
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public Guid Organizer { get; set; }
-    public DateTime? Start { get; set; }
+    public DateTime Start { get; set; }
     public DateTime? End { get; set; }
     public string[]? Rrules { get; set; }
     public string Category { get; set; } = string.Empty;

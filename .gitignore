@@ -1,2 +1,11 @@
 bin
 obj
+
+*.db
+*.db-shm
+*.db-wal
+HomeHub.Hub/wwwroot
+artifacts
+
+# Development-only secrets (weather/admin keys)
+HomeHub.Hub/appsettings.Development.json

@@ -162,7 +162,6 @@ gRPC service definitions are documented in the proto files. For detailed API spe
 - [ ] Task categories/tags
 - [ ] Task comments/notes
 - [ ] REST API endpoint (gRPC-JSON transcoding)
-- [ ] Swagger/OpenAPI documentation UI (Scalar)
 - [ ] Email notifications for task assignments
 - [ ] Task templates for common recurring tasks
 

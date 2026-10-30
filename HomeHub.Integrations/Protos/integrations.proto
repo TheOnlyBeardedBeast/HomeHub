@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package HomeHub.Integrations;
+
+option csharp_namespace = "HomeHub.Integrations";
+
+message HourlyTemperature {
+  string time = 1;
+  double temperature_c = 2;
+}
+
+message Weather {
+  string location = 1;
+  double temperature_c = 2;
+  double feels_like_c = 3;
+  string condition = 4;
+  string icon_url = 5;
+  double high_c = 6;
+  double low_c = 7;
+  int32 chance_of_rain = 8;
+  double wind_kph = 9;
+  int32 humidity = 10;
+  string sunrise = 11;
+  string sunset = 12;
+  string moon_phase = 13;
+  int32 moon_illumination = 14;
+  repeated HourlyTemperature hourly = 15;
+}
+
+message GetWeatherRequest {
+}
+
+message GetWeatherResponse {
+  // Absent when the lookup failed or Weather:ApiKey is not configured.
+  Weather weather = 1;
+}
+
+message Quote {
+  string text = 1;
+  string author = 2;
+}
+
+message GetQuoteRequest {
+}
+
+message GetQuoteResponse {
+  // Absent when the upstream lookup failed.
+  Quote quote = 1;
+}
+
+service WeatherService {
+  rpc GetWeather(GetWeatherRequest) returns (GetWeatherResponse);
+}
+
+service QuoteService {
+  rpc GetQuote(GetQuoteRequest) returns (GetQuoteResponse);
+}

@@ -6,6 +6,24 @@ namespace HumeHub.Tasks.Utils;
 
 public static class RecurrenceUtils
 {
+    public static bool IsValidRRule(string rrule)
+    {
+        if (string.IsNullOrWhiteSpace(rrule))
+        {
+            return false;
+        }
+
+        try
+        {
+            _ = new RecurrencePattern(rrule);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     public static List<Entities.Task> GenerateRecurringTaskOccurrences(
         Entities.RecurringTask recurringTask,
         DateTime rangeStart,

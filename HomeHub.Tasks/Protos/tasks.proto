@@ -26,6 +26,9 @@ message Task {
   bool done = 6;
   optional google.protobuf.Timestamp done_at = 7;
   optional string recurring_task_id = 8;
+  // For recurring instances this is the occurrence date; clients must send it
+  // back when creating a completed copy of a generated occurrence.
+  optional google.protobuf.Timestamp created_at = 9;
 }
 
 message CreateTaskRequest {

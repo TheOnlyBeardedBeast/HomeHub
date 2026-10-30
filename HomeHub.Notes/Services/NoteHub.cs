@@ -1,6 +1,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using HomeHub.Notes.Contexts;
+using HomeHub.Users.Security;
 using Microsoft.EntityFrameworkCore;
 using GrpcStatusCode = Grpc.Core.StatusCode;
 using NoteEntity = HomeHub.Notes.Entities.Note;
@@ -10,11 +11,13 @@ namespace HomeHub.Notes.Services;
 
 public class NoteHub : NoteService.NoteServiceBase
 {
-    private readonly NoteDbContext _dbContext;
+    private readonly INoteDbContext _dbContext;
+    private readonly CurrentUser _currentUser;
 
-    public NoteHub(NoteDbContext dbContext)
+    public NoteHub(INoteDbContext dbContext, CurrentUser currentUser)
     {
         _dbContext = dbContext;
+        _currentUser = currentUser;
     }
 
     public override async Task<CreateNoteResponse> CreateNote(CreateNoteRequest request, ServerCallContext context)
@@ -29,9 +32,8 @@ public class NoteHub : NoteService.NoteServiceBase
             Id = Guid.NewGuid(),
             Title = request.Note.Title,
             Content = request.Note.Content,
-            CreatedBy = request.Note.CreatedBy,
-            CreatedAt = request.Note.CreatedAt?.ToDateTime() ?? DateTime.UtcNow,
-            UpdatedAt = request.Note.UpdatedAt?.ToDateTime()
+            CreatedBy = _currentUser.RequireUserId(),
+            CreatedAt = DateTime.UtcNow
         };
 
         _dbContext.Notes.Add(noteEntity);
@@ -61,11 +63,9 @@ public class NoteHub : NoteService.NoteServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Note with ID {noteId} not found"));
         }
 
-        var protoNote = MapToProtoNote(noteEntity);
-
         return new GetNoteResponse
         {
-            Note = protoNote
+            Note = MapToProtoNote(noteEntity)
         };
     }
 
@@ -92,9 +92,9 @@ public class NoteHub : NoteService.NoteServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Note with ID {noteId} not found"));
         }
 
+        // CreatedBy and CreatedAt are immutable.
         noteEntity.Title = request.Note.Title;
         noteEntity.Content = request.Note.Content;
-        noteEntity.CreatedBy = request.Note.CreatedBy;
         noteEntity.UpdatedAt = DateTime.UtcNow;
 
         _dbContext.Notes.Update(noteEntity);
@@ -129,9 +129,12 @@ public class NoteHub : NoteService.NoteServiceBase
 
     public override async Task<ListNotesResponse> ListNotes(ListNotesRequest request, ServerCallContext context)
     {
-        var notes = await _dbContext.Notes.ToListAsync();
+        var notes = await _dbContext.Notes
+            .OrderByDescending(n => n.UpdatedAt ?? n.CreatedAt)
+            .ToListAsync();
+
         var response = new ListNotesResponse();
-        response.Notes.AddRange(notes.Select(n => MapToProtoNote(n)));
+        response.Notes.AddRange(notes.Select(MapToProtoNote));
 
         return response;
     }
@@ -146,30 +149,31 @@ public class NoteHub : NoteService.NoteServiceBase
         var query = request.Query.ToLower();
         var notes = await _dbContext.Notes
             .Where(n => n.Title.ToLower().Contains(query) || n.Content.ToLower().Contains(query))
+            .OrderByDescending(n => n.UpdatedAt ?? n.CreatedAt)
             .ToListAsync();
 
         var response = new SearchNotesResponse();
-        response.Notes.AddRange(notes.Select(n => MapToProtoNote(n)));
+        response.Notes.AddRange(notes.Select(MapToProtoNote));
 
         return response;
     }
 
     #region Helper Methods
 
-    private NoteProto MapToProtoNote(NoteEntity noteEntity)
+    private static NoteProto MapToProtoNote(NoteEntity noteEntity)
     {
         var protoNote = new NoteProto
         {
             Id = noteEntity.Id.ToString(),
             Title = noteEntity.Title,
             Content = noteEntity.Content,
-            CreatedBy = noteEntity.CreatedBy,
-            CreatedAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(noteEntity.CreatedAt)
+            CreatedBy = noteEntity.CreatedBy.ToString(),
+            CreatedAt = Timestamp.FromDateTime(noteEntity.CreatedAt)
         };
 
         if (noteEntity.UpdatedAt.HasValue)
         {
-            protoNote.UpdatedAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(noteEntity.UpdatedAt.Value);
+            protoNote.UpdatedAt = Timestamp.FromDateTime(noteEntity.UpdatedAt.Value);
         }
 
         return protoNote;

@@ -1,0 +1,76 @@
+version: '3'
+
+vars:
+  RID: linux-x64
+  ARTIFACTS: artifacts
+
+tasks:
+  default:
+    desc: Build the SPA, copy it into the Hub, and publish a single-file executable.
+    cmds:
+      - task: publish
+
+  client:
+    desc: Install client dependencies and build the SPA bundle.
+    dir: HomeHub.Client
+    cmds:
+      - npm ci
+      - npm run build
+    sources:
+      - src/**/*
+      - package.json
+      - package-lock.json
+      - vite.config.ts
+      - tsconfig.json
+      - index.html
+    generates:
+      - dist/**/*
+
+  wwwroot:
+    desc: Copy the built SPA into the Hub's wwwroot.
+    deps: [client]
+    cmds:
+      - rm -rf HomeHub.Hub/wwwroot
+      - mkdir -p HomeHub.Hub/wwwroot
+      - cp -R HomeHub.Client/dist/. HomeHub.Hub/wwwroot/
+
+  publish:
+    desc: Publish the Hub as one self-contained executable with the SPA embedded.
+    deps: [wwwroot]
+    cmds:
+      - >-
+        dotnet publish HomeHub.Hub/HomeHub.Hub.csproj
+        -c Release
+        -r {{.RID}}
+        --self-contained true
+        -p:PublishSingleFile=true
+        -p:IncludeAllContentForSelfExtract=true
+        -p:DebugType=None
+        -p:DebugSymbols=false
+        -o {{.ARTIFACTS}}/{{.RID}}
+
+  publish:compressed:
+    desc: Publish the single-file Hub with a compressed bundle (about half the size, slightly slower first start).
+    deps: [wwwroot]
+    cmds:
+      - >-
+        dotnet publish HomeHub.Hub/HomeHub.Hub.csproj
+        -c Release
+        -r {{.RID}}
+        --self-contained true
+        -p:PublishSingleFile=true
+        -p:IncludeAllContentForSelfExtract=true
+        -p:EnableCompressionInSingleFile=true
+        -p:DebugType=None
+        -p:DebugSymbols=false
+        -o {{.ARTIFACTS}}/{{.RID}}-compressed
+
+  run:
+    desc: Run the Hub from source (serves whatever is currently in wwwroot).
+    cmds:
+      - dotnet run --project HomeHub.Hub
+
+  clean:
+    desc: Remove generated output.
+    cmds:
+      - rm -rf {{.ARTIFACTS}} HomeHub.Hub/wwwroot

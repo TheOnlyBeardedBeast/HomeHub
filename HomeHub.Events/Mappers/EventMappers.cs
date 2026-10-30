@@ -13,10 +13,7 @@ public static class EventMappers
             Description = @event.Description
         };
 
-        if (@event.Start.HasValue)
-        {
-            calendarEvent.Start = new CalDateTime(@event.Start.Value, !@event.AllDay);
-        }
+        calendarEvent.Start = new CalDateTime(@event.Start, !@event.AllDay);
 
         if (@event.End.HasValue)
         {
