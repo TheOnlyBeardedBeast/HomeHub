@@ -24,6 +24,14 @@ public static class ApplicationPipeline
                     + "Set it in appsettings.json or via the Authentication__AdminApiKey environment variable.");
         }
 
+        if (app.Configuration.GetValue("Tls:Enabled", false))
+        {
+            app.Logger.LogInformation(
+                "HTTPS enabled on port {Port} (certificate: {Certificate})",
+                app.Configuration.GetValue("Tls:Port", 5443),
+                app.Configuration["Tls:CertificatePath"] ?? TlsCertificate.SelfSignedCertificatePath);
+        }
+
         using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<HubDbContext>();
         app.Logger.LogInformation(

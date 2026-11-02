@@ -158,6 +158,39 @@ every setting can be overridden at run time with environment variables using
 from your dashboard and set `Weather__ApiKey`. The free tier is plenty for a
 household poll rate (the hub caches upstream data for an hour).
 
+### HTTPS
+
+Set `Tls__Enabled=true` to add an HTTPS listener on port 5443 (HTTP/1.1 and
+HTTP/2 via ALPN); the plaintext ports stay available for existing clients. With
+no certificate configured, the hub generates a self-signed one on first start,
+stores it under `HomeHub/tls/` in the OS app-data folder, and exports
+`homehub.crt` with SANs for `localhost`, the machine name and the current LAN
+IPs:
+
+```bash
+Tls__Enabled=true ./artifacts/linux-x64/HomeHub.Hub
+# https://<host>:5443   (browser warning until the certificate is trusted)
+```
+
+Install `homehub.crt` as a trusted CA to remove the warning. Delete
+`homehub.pfx` and restart to regenerate after the IP changes.
+
+For a mesh/VPN hostname (NetBird, Tailscale, a reverse proxy, …), add it to the
+certificate with `Tls__HostNames`. One or more comma-separated hostnames, IPs or
+full URLs are accepted:
+
+```bash
+Tls__Enabled=true Tls__HostNames='homehub.netbird.cloud,https://tablet.example:5443' \
+  ./artifacts/linux-x64/HomeHub.Hub
+```
+
+Changing the list regenerates the self-signed certificate, so reinstall
+`homehub.crt` afterwards. Bring your own certificate with
+`Tls__CertificatePath=/path/cert.pfx` and `Tls__CertificatePassword=...`.
+
+HTTPS gives the browser a secure context, so clipboard access and other
+secure-only APIs work on LAN addresses too.
+
 ### Data
 
 The database is created on first run in the OS app-data folder:
@@ -193,6 +226,8 @@ Open <http://localhost:5000>. The runtime image is
 `gcr.io/distroless/cc-debian12:nonroot` — no shell, no package manager, no
 libicu (the hub is published with .NET invariant globalization for the
 container). Configuration is environment-only, exactly like the release binary.
+Add `-p 5443:5443 -e Tls__Enabled=true` for HTTPS; the self-signed certificate
+is generated inside the `/data` volume.
 
 ## Development
 

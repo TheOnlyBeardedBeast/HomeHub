@@ -61,6 +61,6 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
     DOTNET_BUNDLE_EXTRACT_BASE_DIR=/tmp/dotnet \
     ConnectionStrings__DefaultConnection="Data Source=/data/homehub.db"
 
-EXPOSE 5000 5001
+EXPOSE 5000 5001 5443
 USER nonroot:nonroot
 ENTRYPOINT ["/app/HomeHub.Hub"]

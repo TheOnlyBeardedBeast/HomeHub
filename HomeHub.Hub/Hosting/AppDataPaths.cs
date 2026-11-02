@@ -8,12 +8,14 @@ namespace HomeHub.Hub.Hosting;
 /// </summary>
 public static class AppDataPaths
 {
-    public static string DatabasePath()
+    public static string DataFolder()
     {
         var folder = Path.Combine(AppDataFolder(), "HomeHub");
         Directory.CreateDirectory(folder);
-        return Path.Combine(folder, "homehub.db");
+        return folder;
     }
+
+    public static string DatabasePath() => Path.Combine(DataFolder(), "homehub.db");
 
     private static string AppDataFolder()
     {
