@@ -138,6 +138,21 @@ runtime pack, so run it with Termux's `glibc-runner` (`grun`) — see
 [docs/TERMUX.md](docs/TERMUX.md) for the copy-paste setup, including LAN access
 on `0.0.0.0:5000`.
 
+### Updating
+
+Copy [scripts/update.sh](scripts/update.sh) next to the binary, stop the hub,
+and run it:
+
+```bash
+./update.sh
+```
+
+It downloads the latest release asset for the current platform, verifies it
+against the release's `SHA256SUMS`, keeps the previous binary as
+`HomeHub.Hub.prev`, and leaves restarting to you. It refuses to run while
+`HomeHub.Hub` is running; `curl` and `sha256sum` (or `shasum` on macOS) are
+required. Roll back with `mv HomeHub.Hub.prev HomeHub.Hub`.
+
 ### Configuration and secrets
 
 Secrets never live in the committed `HomeHub.Hub/appsettings.json`; that file is
