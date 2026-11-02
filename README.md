@@ -107,6 +107,10 @@ task publish                  # build the SPA into Hub/wwwroot, then publish one
 ```
 
 Cross-publish with `task publish RID=win-x64` (or `osx-arm64`, `linux-arm64`).
+Pushing a `v*` tag runs the release workflow
+([.github/workflows/release.yml](.github/workflows/release.yml)), which builds
+`HomeHub.Hub-<rid>` for linux-x64, linux-arm64, osx-arm64 and win-x64 plus a
+`SHA256SUMS` file; the tag without its `v` is stamped as the assembly version.
 The executable contains the SPA and the secret-free `appsettings.json`; runtime
 settings come from the environment:
 

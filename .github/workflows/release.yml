@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [linux-x64, linux-arm64, osx-arm64, win-x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: HomeHub.Client/package-lock.json
+
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish single-file hub
+        run: task publish RID=${{ matrix.rid }} VERSION=${GITHUB_REF_NAME#v}
+
+      - name: Name release asset
+        run: |
+          rid='${{ matrix.rid }}'
+          src="artifacts/$rid/HomeHub.Hub"
+          ext=''
+          if [ -f "$src.exe" ]; then
+            src="$src.exe"
+            ext='.exe'
+          fi
+          mkdir -p release
+          cp "$src" "release/HomeHub.Hub-$rid$ext"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: release/
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Write checksums
+        run: cd release && sha256sum HomeHub.Hub-* | tee SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/HomeHub.Hub-*
+            release/SHA256SUMS
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

@@ -2,6 +2,7 @@ version: '3'
 
 vars:
   RID: linux-x64
+  VERSION: '0.1.0'
   ARTIFACTS: artifacts
 
 tasks:
@@ -47,6 +48,7 @@ tasks:
         -p:IncludeAllContentForSelfExtract=true
         -p:DebugType=None
         -p:DebugSymbols=false
+        -p:Version={{.VERSION}}
         -o {{.ARTIFACTS}}/{{.RID}}
 
   publish:compressed:
@@ -63,6 +65,7 @@ tasks:
         -p:EnableCompressionInSingleFile=true
         -p:DebugType=None
         -p:DebugSymbols=false
+        -p:Version={{.VERSION}}
         -o {{.ARTIFACTS}}/{{.RID}}-compressed
 
   run:
