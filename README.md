@@ -191,6 +191,16 @@ Changing the list regenerates the self-signed certificate, so reinstall
 HTTPS gives the browser a secure context, so clipboard access and other
 secure-only APIs work on LAN addresses too.
 
+### Install as an app
+
+The client is a PWA. Over HTTPS, use **Install app** in Chrome/Edge or **Add to
+Home Screen** in Safari to run HomeHub in its own window, without browser
+chrome. Installation and service workers require a secure origin, so enable
+`Tls__Enabled` and trust the self-signed certificate (or terminate TLS in a
+reverse proxy). On plain `http://` LAN addresses the app still works in the
+browser, but cannot be installed. The installed app still needs the hub for its
+data — there is no offline mode.
+
 ### Data
 
 The database is created on first run in the OS app-data folder:

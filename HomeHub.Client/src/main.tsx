@@ -7,11 +7,14 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ToastViewport } from './components/ToastViewport';
 import { queryClient } from './lib/queryClient';
+import { registerServiceWorker } from './lib/serviceWorker';
 import { router } from './router';
 import './styles/global.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element missing');
+
+registerServiceWorker();
 
 createRoot(root).render(
   <StrictMode>

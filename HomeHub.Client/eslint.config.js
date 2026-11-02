@@ -11,7 +11,7 @@ import tseslint from 'typescript-eslint';
  * they mark files that should be split rather than failing the build.
  */
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'src/gen/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'public/**', 'src/gen/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   react.configs.flat.recommended,
