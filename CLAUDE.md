@@ -14,6 +14,7 @@ dotnet run --project HomeHub.Hub        # run the whole application (the only ex
 # Taskfile (go-task) at the repository root
 task publish                            # build the SPA into Hub/wwwroot, then single-file publish to artifacts/<rid>
 task publish:compressed                 # same, compressed bundle (~54 MB instead of ~112 MB)
+task publish:termux                     # ARM64 build for Termux via glibc-runner (self-contained, ~53 MB)
 task publish RID=win-x64                # cross-publish for another OS
 task run                                # run the hub from source
 

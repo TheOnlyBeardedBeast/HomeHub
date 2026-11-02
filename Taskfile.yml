@@ -68,6 +68,24 @@ tasks:
         -p:Version={{.VERSION}}
         -o {{.ARTIFACTS}}/{{.RID}}-compressed
 
+  publish:termux:
+    desc: Publish the compressed ARM64 Hub for Termux (run with glibc-runner).
+    deps: [wwwroot]
+    cmds:
+      - >-
+        dotnet publish HomeHub.Hub/HomeHub.Hub.csproj
+        -c Release
+        -r linux-arm64
+        --self-contained true
+        -p:PublishSingleFile=true
+        -p:IncludeAllContentForSelfExtract=true
+        -p:EnableCompressionInSingleFile=true
+        -p:InvariantGlobalization=true
+        -p:DebugType=None
+        -p:DebugSymbols=false
+        -p:Version={{.VERSION}}
+        -o {{.ARTIFACTS}}/linux-arm64
+
   run:
     desc: Run the Hub from source (serves whatever is currently in wwwroot).
     cmds:

@@ -132,6 +132,12 @@ supported when publishing with NativeAOT`). Trimming is likewise unsupported by
 EF Core. A framework-dependent folder publish is ~11 MB but needs the .NET 10
 runtime installed and is no longer a single file.
 
+**Android / Termux:** `task publish:termux` builds the self-contained ARM64 binary
+(invariant globalization, so no ICU needed). ASP.NET Core has no native Android
+runtime pack, so run it with Termux's `glibc-runner` (`grun`) — see
+[docs/TERMUX.md](docs/TERMUX.md) for the copy-paste setup, including LAN access
+on `0.0.0.0:5000`.
+
 ### Configuration and secrets
 
 Secrets never live in the committed `HomeHub.Hub/appsettings.json`; that file is
