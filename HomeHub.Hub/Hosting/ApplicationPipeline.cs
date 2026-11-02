@@ -52,6 +52,7 @@ public static class ApplicationPipeline
 
     public static void MapHomeHubEndpoints(this WebApplication app)
     {
+        app.MapGet("/api/version", () => Results.Ok(new { version = VersionInfo.Version }));
         app.MapEventsEndpoints();
         app.MapGrpcService<EventHub>().EnableGrpcWeb();
         app.MapGrpcService<TaskHub>().EnableGrpcWeb();

@@ -1,5 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
-import { KeyRound, ShieldCheck } from 'lucide-react';
+import { KeyRound, Server, ShieldCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { colors, fonts, radius } from '../../styles/tokens.stylex';
 
@@ -54,7 +54,13 @@ const styles = stylex.create({
   },
 });
 
-export function HouseholdRail() {
+export function HouseholdRail({ version, pending }: { version?: string; pending: boolean }) {
+  const versionLabel = version
+    ? `HomeHub v${version}`
+    : pending
+      ? 'Checking the deployed version…'
+      : 'Version unavailable';
+
   return (
     <>
       <Card padding="md">
@@ -100,6 +106,13 @@ export function HouseholdRail() {
           HomeHub is meant for a trusted household network. Share keys privately, and avoid posting
           them in group chats or on a screen the whole neighbourhood can see.
         </p>
+      </Card>
+
+      <Card padding="md">
+        <h3 {...stylex.props(styles.railTitle)}>
+          <Server size={16} color={colors.inkMuted} /> Server
+        </h3>
+        <p {...stylex.props(styles.railCopy)}>{versionLabel}</p>
       </Card>
     </>
   );

@@ -4,6 +4,7 @@ import { UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useCurrentUser } from '../api/hooks/useCurrentUser';
 import { useUsers } from '../api/hooks/useUsers';
+import { useVersion } from '../api/hooks/useVersion';
 import { Button } from '../components/ui/Button';
 import { PageError } from '../components/ui/PageError';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -34,6 +35,7 @@ export function HouseholdPage() {
   const currentUser = useCurrentUser();
   const isAdmin = currentUser.data?.isAdmin ?? false;
   const users = useUsers(isAdmin);
+  const version = useVersion();
   const apiKey = useStore($apiKey);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -98,7 +100,7 @@ export function HouseholdPage() {
         </div>
 
         <aside {...stylex.props(styles.rail)}>
-          <HouseholdRail />
+          <HouseholdRail version={version.data} pending={version.isPending} />
         </aside>
       </div>
 
