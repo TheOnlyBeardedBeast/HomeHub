@@ -33,7 +33,8 @@ public class NoteHub : NoteService.NoteServiceBase
             Title = request.Note.Title,
             Content = request.Note.Content,
             CreatedBy = _currentUser.RequireUserId(),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Version = 1
         };
 
         _dbContext.Notes.Add(noteEntity);
@@ -92,13 +93,19 @@ public class NoteHub : NoteService.NoteServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Note with ID {noteId} not found"));
         }
 
+        if (!request.Force && request.Note.Version != noteEntity.Version)
+        {
+            throw Conflict("Note");
+        }
+
         // CreatedBy and CreatedAt are immutable.
         noteEntity.Title = request.Note.Title;
         noteEntity.Content = request.Note.Content;
         noteEntity.UpdatedAt = DateTime.UtcNow;
+        noteEntity.Version++;
 
         _dbContext.Notes.Update(noteEntity);
-        await _dbContext.SaveChangesAsync();
+        await SaveWithConflictAsync();
 
         return new Empty();
     }
@@ -160,6 +167,23 @@ public class NoteHub : NoteService.NoteServiceBase
 
     #region Helper Methods
 
+    private async Task SaveWithConflictAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("Note");
+        }
+    }
+
+    private static RpcException Conflict(string resource) =>
+        new(new Status(
+            GrpcStatusCode.Aborted,
+            $"{resource} changed since you loaded it. Reload and try again."));
+
     private static NoteProto MapToProtoNote(NoteEntity noteEntity)
     {
         var protoNote = new NoteProto
@@ -168,7 +192,8 @@ public class NoteHub : NoteService.NoteServiceBase
             Title = noteEntity.Title,
             Content = noteEntity.Content,
             CreatedBy = noteEntity.CreatedBy.ToString(),
-            CreatedAt = Timestamp.FromDateTime(noteEntity.CreatedAt)
+            CreatedAt = Timestamp.FromDateTime(noteEntity.CreatedAt),
+            Version = noteEntity.Version
         };
 
         if (noteEntity.UpdatedAt.HasValue)

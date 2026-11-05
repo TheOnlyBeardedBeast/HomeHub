@@ -39,7 +39,8 @@ public class TaskHub : TaskService.TaskServiceBase
             Done = request.Task.Done,
             DoneAt = request.Task.Done ? DateTime.UtcNow : null,
             CreatedAt = request.Task.CreatedAt?.ToDateTime() ?? DateTime.UtcNow,
-            RecurringTaskId = ParseOptionalUserId(request.Task.RecurringTaskId, "RecurringTaskId")
+            RecurringTaskId = ParseOptionalUserId(request.Task.RecurringTaskId, "RecurringTaskId"),
+            Version = 1
         };
 
         _dbContext.Tasks.Add(taskEntity);
@@ -98,6 +99,11 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Task with ID {taskId} not found"));
         }
 
+        if (!request.Force && request.Task.Version != taskEntity.Version)
+        {
+            throw Conflict("Task");
+        }
+
         taskEntity.Title = request.Task.Title;
         taskEntity.Description = request.Task.Description;
         taskEntity.AssignedTo = ParseOptionalUserId(request.Task.AssignedTo, "AssignedTo");
@@ -105,9 +111,10 @@ public class TaskHub : TaskService.TaskServiceBase
         taskEntity.DoneAt = request.Task.Done
             ? taskEntity.DoneAt ?? DateTime.UtcNow
             : null;
+        taskEntity.Version++;
 
         _dbContext.Tasks.Update(taskEntity);
-        await _dbContext.SaveChangesAsync();
+        await SaveWithConflictAsync();
 
         return new Empty();
     }
@@ -199,7 +206,8 @@ public class TaskHub : TaskService.TaskServiceBase
             CreatedBy = _currentUser.RequireUserId(),
             AssignedTo = ParseOptionalUserId(request.RecurringTask.AssignedTo, "AssignedTo"),
             RRule = request.RecurringTask.Rrule,
-            CreatedAt = request.RecurringTask.CreatedAt?.ToDateTime() ?? DateTime.UtcNow
+            CreatedAt = request.RecurringTask.CreatedAt?.ToDateTime() ?? DateTime.UtcNow,
+            Version = 1
         };
 
         _dbContext.RecurringTasks.Add(recurringTaskEntity);
@@ -270,17 +278,40 @@ public class TaskHub : TaskService.TaskServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"RecurringTask with ID {recurringTaskId} not found"));
         }
 
+        if (!request.Force && request.RecurringTask.Version != recurringTaskEntity.Version)
+        {
+            throw Conflict("Repeating task");
+        }
+
         // CreatedBy and CreatedAt (the recurrence start) are immutable.
         recurringTaskEntity.Title = request.RecurringTask.Title;
         recurringTaskEntity.Description = request.RecurringTask.Description;
         recurringTaskEntity.AssignedTo = ParseOptionalUserId(request.RecurringTask.AssignedTo, "AssignedTo");
         recurringTaskEntity.RRule = request.RecurringTask.Rrule;
+        recurringTaskEntity.Version++;
 
         _dbContext.RecurringTasks.Update(recurringTaskEntity);
-        await _dbContext.SaveChangesAsync();
+        await SaveWithConflictAsync();
 
         return new Empty();
     }
+
+    private async System.Threading.Tasks.Task SaveWithConflictAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("Task");
+        }
+    }
+
+    private static RpcException Conflict(string resource) =>
+        new(new Status(
+            GrpcStatusCode.Aborted,
+            $"{resource} changed since you loaded it. Reload and try again."));
 
     public override async Task<Empty> DeleteRecurringTask(DeleteRecurringTaskRequest request, ServerCallContext context)
     {

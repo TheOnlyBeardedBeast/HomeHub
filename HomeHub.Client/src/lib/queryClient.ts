@@ -1,16 +1,9 @@
 import { Code, ConnectError } from '@connectrpc/connect';
-import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
-import { clearApiKey } from './session';
+import { QueryClient } from '@tanstack/react-query';
 
-function handleAuthFailure(error: unknown) {
-  if (error instanceof ConnectError && error.code === Code.Unauthenticated) {
-    clearApiKey();
-  }
-}
-
+// A 401 can come from an authenticating reverse proxy (e.g. NetBird) rather than
+// an invalid API key, so an Unauthenticated error must not wipe the stored key.
 export const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: handleAuthFailure }),
-  mutationCache: new MutationCache({ onError: handleAuthFailure }),
   defaultOptions: {
     queries: {
       staleTime: 20_000,

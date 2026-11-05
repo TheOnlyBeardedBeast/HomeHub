@@ -46,6 +46,7 @@ public class HubDbContext : DbContext, IEventDbContext, ITaskDbContext, INoteDbC
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
             entity.Property(e => e.AllDay).IsRequired();
             entity.Property(e => e.Start).IsRequired();
+            entity.Property(e => e.Version).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<RecurringTaskEntity>(entity =>
@@ -57,6 +58,7 @@ public class HubDbContext : DbContext, IEventDbContext, ITaskDbContext, INoteDbC
             entity.Property(e => e.AssignedTo);
             entity.Property(e => e.RRule).IsRequired().HasMaxLength(500);
             entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.Version).IsConcurrencyToken();
 
             entity.HasMany(e => e.Instances)
                 .WithOne(t => t.RecurringTask)
@@ -74,6 +76,7 @@ public class HubDbContext : DbContext, IEventDbContext, ITaskDbContext, INoteDbC
             entity.Property(e => e.Done).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.RecurringTaskId).IsRequired(false);
+            entity.Property(e => e.Version).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<NoteEntity>(entity =>
@@ -84,6 +87,7 @@ public class HubDbContext : DbContext, IEventDbContext, ITaskDbContext, INoteDbC
             entity.Property(e => e.CreatedBy).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired(false);
+            entity.Property(e => e.Version).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<ListEntity>(entity =>
@@ -94,6 +98,7 @@ public class HubDbContext : DbContext, IEventDbContext, ITaskDbContext, INoteDbC
             entity.Property(e => e.CreatedBy).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired(false);
+            entity.Property(e => e.Version).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<UserEntity>(entity =>

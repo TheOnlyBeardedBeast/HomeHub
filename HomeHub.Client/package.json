@@ -10,7 +10,7 @@
     "check:rrules": "node --experimental-strip-types scripts/check-rrules.ts",
     "check:timeline": "node --experimental-strip-types scripts/check-timeline.ts",
     "preview": "vite preview",
-    "gen": "buf generate ../HomeHub.Events/Protos --template buf.gen.yaml && buf generate ../HomeHub.Tasks/Protos --template buf.gen.yaml && buf generate ../HomeHub.Notes/Protos --template buf.gen.yaml && buf generate ../HomeHub.Lists/Protos --template buf.gen.yaml && buf generate ../HomeHub.Users/Protos --template buf.gen.yaml && buf generate ../HomeHub.Integrations/Protos --template buf.gen.yaml",
+    "gen": "buf generate ../HomeHub.Events/Protos --template buf.gen.yaml && buf generate ../HomeHub.Tasks/Protos --template buf.gen.yaml && buf generate ../HomeHub.Notes/Protos --template buf.gen.yaml && buf generate ../HomeHub.Lists/Protos --template buf.gen.yaml && buf generate ../HomeHub.Users/Protos --template buf.gen.yaml && buf generate ../HomeHub.Integrations/Protos --template buf.gen.yaml && buf generate ../HomeHub.Hub/Protos --template buf.gen.yaml",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

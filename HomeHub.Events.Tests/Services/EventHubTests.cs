@@ -257,7 +257,8 @@ public class EventHubTests
                 Start = Timestamp.FromDateTime(startTime),
                 End = Timestamp.FromDateTime(endTime),
                 Category = "Workshop",
-                AllDay = true
+                AllDay = true,
+                Version = eventEntity.Version
             }
         };
 
@@ -272,6 +273,42 @@ public class EventHubTests
         Assert.Equal(organizerId, updatedEvent.Organizer);
         Assert.Equal("Workshop", updatedEvent.Category);
         Assert.True(updatedEvent.AllDay);
+        Assert.Equal(2, updatedEvent.Version);
+    }
+
+    [Fact]
+    public async Task UpdateEvent_WithStaleVersion_ThrowsAborted()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var eventHub = CreateEventHub(dbContext);
+        var eventEntity = new EventEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Original Title",
+            Organizer = UserId,
+            Category = "Meeting",
+            Start = DateTime.UtcNow.AddDays(1)
+        };
+        dbContext.Events.Add(eventEntity);
+        await dbContext.SaveChangesAsync();
+
+        var updateEventRequest = new UpdateEventRequest
+        {
+            Event = new EventProto
+            {
+                Id = eventEntity.Id.ToString(),
+                Title = "Stale edit",
+                Start = Timestamp.FromDateTime(eventEntity.Start),
+                Category = "Meeting",
+                Version = eventEntity.Version + 1
+            }
+        };
+
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => eventHub.UpdateEvent(updateEventRequest, null!));
+
+        Assert.Equal(StatusCode.Aborted, exception.Status.StatusCode);
+        Assert.Equal("Original Title", (await dbContext.Events.FindAsync(eventEntity.Id))!.Title);
     }
 
     [Fact]

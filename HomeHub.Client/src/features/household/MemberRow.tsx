@@ -1,5 +1,6 @@
 import * as stylex from '@stylexjs/stylex';
-import { Trash2 } from 'lucide-react';
+import { RefreshCw, Trash2 } from 'lucide-react';
+import { useCallback } from 'react';
 import { Avatar } from '../../components/ui/Avatar';
 import { IconButton } from '../../components/ui/Button';
 import type { User } from '../../gen/users_pb';
@@ -40,11 +41,15 @@ export function MemberRow({
   member,
   divided,
   onDelete,
+  onRegenerate,
 }: {
   member: User;
   divided: boolean;
   onDelete: () => void;
+  onRegenerate: (member: User) => void;
 }) {
+  const regenerate = useCallback(() => onRegenerate(member), [member, onRegenerate]);
+
   return (
     <div>
       {divided && <div {...stylex.props(styles.divider)} />}
@@ -58,6 +63,13 @@ export function MemberRow({
               : 'Can sign in with their own key'}
           </span>
         </div>
+        <IconButton
+          label={`Generate a new key for ${member.fullName}`}
+          size="sm"
+          onClick={regenerate}
+        >
+          <RefreshCw size={14} />
+        </IconButton>
         <IconButton label={`Delete ${member.fullName}`} size="sm" onClick={onDelete}>
           <Trash2 size={14} />
         </IconButton>

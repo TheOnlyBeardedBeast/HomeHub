@@ -8,6 +8,10 @@ export function isPermissionDenied(error: unknown): boolean {
   return error instanceof ConnectError && error.code === Code.PermissionDenied;
 }
 
+export function isConcurrencyConflict(error: unknown): boolean {
+  return error instanceof ConnectError && error.code === Code.Aborted;
+}
+
 export function errorMessage(error: unknown): string {
   if (error instanceof ConnectError) {
     switch (error.code) {
@@ -19,6 +23,8 @@ export function errorMessage(error: unknown): string {
         return error.rawMessage || 'That item no longer exists.';
       case Code.InvalidArgument:
         return error.rawMessage || 'Some of those details do not look right.';
+      case Code.Aborted:
+        return 'Someone else changed this while you were editing. Reload and try again.';
       case Code.Unavailable:
         return 'HomeHub is not reachable. Is the backend running?';
       default:

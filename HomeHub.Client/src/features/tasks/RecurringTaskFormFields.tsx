@@ -1,4 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
+import type { ReactNode } from 'react';
 import { FormError } from '../../components/ui/FormError';
 import type { AppFormApi } from '../../components/ui/formApi';
 import { RecurrenceEditor } from '../../components/ui/RecurrenceEditor';
@@ -24,11 +25,13 @@ export function RecurringTaskFormFields({
   assigneeOptions,
   anchor,
   serverError,
+  notice,
 }: {
   form: AppFormApi<RecurringFormValues>;
   assigneeOptions: { value: string; label: string }[];
   anchor: Date;
   serverError: string | null;
+  notice?: ReactNode;
 }) {
   return (
     <form
@@ -40,6 +43,7 @@ export function RecurringTaskFormFields({
       }}
     >
       {serverError && <FormError message={serverError} />}
+      {notice}
 
       <form.Field
         name="title"

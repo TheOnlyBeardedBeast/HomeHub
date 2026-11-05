@@ -14,7 +14,8 @@ public static class TaskMappers
             Description = taskEntity.Description ?? string.Empty,
             CreatedBy = taskEntity.CreatedBy.ToString(),
             Done = taskEntity.Done,
-            CreatedAt = Timestamp.FromDateTime(taskEntity.CreatedAt)
+            CreatedAt = Timestamp.FromDateTime(taskEntity.CreatedAt),
+            Version = taskEntity.Version
         };
 
         if (taskEntity.AssignedTo.HasValue)
@@ -44,7 +45,8 @@ public static class TaskMappers
             Description = recurringTaskEntity.Description ?? string.Empty,
             CreatedBy = recurringTaskEntity.CreatedBy.ToString(),
             Rrule = recurringTaskEntity.RRule,
-            CreatedAt = Timestamp.FromDateTime(recurringTaskEntity.CreatedAt)
+            CreatedAt = Timestamp.FromDateTime(recurringTaskEntity.CreatedAt),
+            Version = recurringTaskEntity.Version
         };
 
         if (recurringTaskEntity.AssignedTo.HasValue)

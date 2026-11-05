@@ -1,4 +1,5 @@
 using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using HomeHub.Hub.Contexts;
 using HomeHub.Lists.Services;
 using HomeHub.Users.Security;
@@ -100,7 +101,8 @@ public class ListHubTests
             {
                 Id = entity.Id.ToString(),
                 Title = "Weekly groceries",
-                CreatedBy = User2.ToString()
+                CreatedBy = User2.ToString(),
+                Version = entity.Version
             }
         };
         request.List.Content.AddRange(new[] { "Milk", "Bread", "Apples" });
@@ -112,6 +114,73 @@ public class ListHubTests
         Assert.Equal(new[] { "Milk", "Bread", "Apples" }, updated.Content);
         Assert.Equal(User1, updated.CreatedBy);
         Assert.NotNull(updated.UpdatedAt);
+        Assert.Equal(2, updated.Version);
+    }
+
+    [Fact]
+    public async Task UpdateList_WithStaleVersion_ThrowsAborted()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var entity = new ListEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Groceries",
+            Content = new[] { "Milk" },
+            CreatedBy = User1,
+            CreatedAt = DateTime.UtcNow
+        };
+        dbContext.Lists.Add(entity);
+        await dbContext.SaveChangesAsync();
+
+        var request = new UpdateListRequest
+        {
+            List = new ListProto
+            {
+                Id = entity.Id.ToString(),
+                Title = "Stale edit",
+                Version = entity.Version + 1
+            }
+        };
+
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => CreateListHub(dbContext).UpdateList(request, null!));
+
+        Assert.Equal(StatusCode.Aborted, exception.Status.StatusCode);
+        Assert.Equal("Groceries", (await dbContext.Lists.SingleAsync()).Title);
+    }
+
+    [Fact]
+    public async Task UpdateList_WithStaleVersionAndForce_Overwrites()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var entity = new ListEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Groceries",
+            Content = new[] { "Milk" },
+            CreatedBy = User1,
+            CreatedAt = DateTime.UtcNow
+        };
+        dbContext.Lists.Add(entity);
+        await dbContext.SaveChangesAsync();
+
+        var request = new UpdateListRequest
+        {
+            Force = true,
+            List = new ListProto
+            {
+                Id = entity.Id.ToString(),
+                Title = "Latest shopping",
+                Version = entity.Version + 1
+            }
+        };
+        request.List.Content.Add("Bread");
+
+        await CreateListHub(dbContext).UpdateList(request, null!);
+
+        var updated = await dbContext.Lists.SingleAsync();
+        Assert.Equal("Latest shopping", updated.Title);
+        Assert.Equal(2, updated.Version);
     }
 
     [Fact]
@@ -133,6 +202,53 @@ public class ListHubTests
             new DeleteListRequest { Id = entity.Id.ToString() }, null!);
 
         Assert.Empty(dbContext.Lists);
+    }
+
+    [Fact]
+    public async Task SetPriorityList_KeepsExactlyOnePrioritizedFirst()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var groceries = new ListEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Groceries",
+            Content = new[] { "Milk" },
+            CreatedBy = User1,
+            CreatedAt = DateTime.UtcNow
+        };
+        var packing = new ListEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Packing",
+            Content = new[] { "Tent" },
+            CreatedBy = User1,
+            CreatedAt = DateTime.UtcNow
+        };
+        dbContext.Lists.AddRange(groceries, packing);
+        await dbContext.SaveChangesAsync();
+        var hub = CreateListHub(dbContext);
+
+        await hub.SetPriorityList(
+            new SetPriorityListRequest { Id = packing.Id.ToString(), Prioritized = true }, null!);
+
+        var response = await hub.ListLists(new ListListsRequest(), null!);
+        Assert.Equal(packing.Id.ToString(), response.Lists[0].Id);
+        Assert.True(response.Lists[0].Prioritized);
+        Assert.False(response.Lists[1].Prioritized);
+
+        await hub.SetPriorityList(
+            new SetPriorityListRequest { Id = groceries.Id.ToString(), Prioritized = true }, null!);
+
+        response = await hub.ListLists(new ListListsRequest(), null!);
+        Assert.Equal(groceries.Id.ToString(), response.Lists[0].Id);
+        Assert.True(response.Lists[0].Prioritized);
+        Assert.False(response.Lists[1].Prioritized);
+
+        await hub.SetPriorityList(
+            new SetPriorityListRequest { Id = groceries.Id.ToString(), Prioritized = false }, null!);
+
+        response = await hub.ListLists(new ListListsRequest(), null!);
+        Assert.All(response.Lists, list => Assert.False(list.Prioritized));
     }
 
     [Fact]

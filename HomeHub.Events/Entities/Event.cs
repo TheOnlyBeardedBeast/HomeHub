@@ -14,4 +14,5 @@ public class Event
     public string Category { get; set; } = string.Empty;
     public DateTime[]? ExceptDates { get; set; }
     public bool AllDay { get; set; } = false;
+    public int Version { get; set; } = 1;
 }

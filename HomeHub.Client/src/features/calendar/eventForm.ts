@@ -95,5 +95,6 @@ export function draftFromValues(value: EventFormValues, event?: EventMessage): E
     exceptDates: (event?.exceptDates ?? [])
       .map((stamp) => toDate(stamp))
       .filter((date): date is Date => Boolean(date)),
+    version: event?.version,
   };
 }

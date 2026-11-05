@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task as TaskMessage } from '../../gen/tasks_pb';
+import { isConcurrencyConflict } from '../../lib/errors';
 import { taskClient } from '../clients';
 import { keys } from '../keys';
 
@@ -35,9 +36,15 @@ export function useToggleTask() {
           done: !task.done,
           recurringTaskId: task.recurringTaskId,
           createdAt: task.createdAt,
+          version: task.version,
         },
       });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.tasksPrefix }),
+    onError: (error) => {
+      if (isConcurrencyConflict(error)) {
+        void queryClient.invalidateQueries({ queryKey: keys.tasksPrefix });
+      }
+    },
   });
 }

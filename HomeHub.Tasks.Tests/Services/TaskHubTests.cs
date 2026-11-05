@@ -201,7 +201,8 @@ public class TaskHubTests
                 CreatedBy = User1.ToString(),
                 AssignedTo = User3.ToString(),
                 Done = true,
-                DoneAt = Timestamp.FromDateTime(DateTime.UtcNow)
+                DoneAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                Version = taskEntity.Version
             }
         };
 
@@ -217,6 +218,40 @@ public class TaskHubTests
         Assert.True(updatedTask.Done);
         Assert.NotNull(updatedTask.DoneAt);
         Assert.Equal(User1, updatedTask.CreatedBy);
+        Assert.Equal(2, updatedTask.Version);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task UpdateTask_WithStaleVersion_ThrowsAborted()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var taskHub = CreateTaskHub(dbContext);
+        var taskEntity = new TaskEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Original Title",
+            CreatedBy = User1,
+            CreatedAt = DateTime.UtcNow
+        };
+        dbContext.Tasks.Add(taskEntity);
+        await dbContext.SaveChangesAsync();
+
+        var updateTaskRequest = new UpdateTaskRequest
+        {
+            Task = new TaskProto
+            {
+                Id = taskEntity.Id.ToString(),
+                Title = "Stale edit",
+                CreatedBy = User1.ToString(),
+                Version = taskEntity.Version + 1
+            }
+        };
+
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => taskHub.UpdateTask(updateTaskRequest, null!));
+
+        Assert.Equal(StatusCode.Aborted, exception.Status.StatusCode);
+        Assert.Equal("Original Title", (await dbContext.Tasks.FindAsync(taskEntity.Id))!.Title);
     }
 
     [Fact]
@@ -569,7 +604,8 @@ public class TaskHubTests
                 Title = "Updated Title",
                 CreatedBy = User1.ToString(),
                 AssignedTo = User3.ToString(),
-                Rrule = "FREQ=DAILY"
+                Rrule = "FREQ=DAILY",
+                Version = recurringTaskEntity.Version
             }
         };
 
@@ -582,6 +618,44 @@ public class TaskHubTests
         Assert.Equal("Updated Title", updatedRecurringTask.Title);
         Assert.Equal(User3, updatedRecurringTask.AssignedTo);
         Assert.Equal("FREQ=DAILY", updatedRecurringTask.RRule);
+        Assert.Equal(2, updatedRecurringTask.Version);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task UpdateRecurringTask_WithStaleVersion_ThrowsAborted()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var taskHub = CreateTaskHub(dbContext);
+        var recurringTaskEntity = new RecurringTaskEntity
+        {
+            Id = Guid.NewGuid(),
+            Title = "Original Title",
+            CreatedBy = User1,
+            RRule = "FREQ=WEEKLY;BYDAY=MO",
+            CreatedAt = DateTime.UtcNow
+        };
+        dbContext.RecurringTasks.Add(recurringTaskEntity);
+        await dbContext.SaveChangesAsync();
+
+        var updateRecurringTaskRequest = new UpdateRecurringTaskRequest
+        {
+            RecurringTask = new RecurringTaskProto
+            {
+                Id = recurringTaskEntity.Id.ToString(),
+                Title = "Stale edit",
+                CreatedBy = User1.ToString(),
+                Rrule = "FREQ=DAILY",
+                Version = recurringTaskEntity.Version + 1
+            }
+        };
+
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => taskHub.UpdateRecurringTask(updateRecurringTaskRequest, null!));
+
+        Assert.Equal(StatusCode.Aborted, exception.Status.StatusCode);
+        Assert.Equal(
+            "Original Title",
+            (await dbContext.RecurringTasks.FindAsync(recurringTaskEntity.Id))!.Title);
     }
 
     [Fact]

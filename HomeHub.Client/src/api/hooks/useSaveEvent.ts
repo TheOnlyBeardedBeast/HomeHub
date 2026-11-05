@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { isConcurrencyConflict } from '../../lib/errors';
 import { toTimestamp } from '../../lib/format';
 import { eventClient } from '../clients';
 import { keys } from '../keys';
@@ -13,6 +14,8 @@ export interface EventDraft {
   allDay: boolean;
   rrules?: string[];
   exceptDates?: Date[];
+  version?: number;
+  force?: boolean;
 }
 
 export function useSaveEvent() {
@@ -29,10 +32,11 @@ export function useSaveEvent() {
         allDay: draft.allDay,
         rrules: draft.rrules ?? [],
         exceptDates: (draft.exceptDates ?? []).map(toTimestamp),
+        version: draft.version ?? 0,
       };
 
       if (draft.id) {
-        await eventClient.updateEvent({ event });
+        await eventClient.updateEvent({ event, force: draft.force });
         return draft.id;
       }
 
@@ -42,6 +46,12 @@ export function useSaveEvent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.eventsPrefix });
       queryClient.invalidateQueries({ queryKey: keys.eventPrefix });
+    },
+    onError: (error) => {
+      if (isConcurrencyConflict(error)) {
+        void queryClient.invalidateQueries({ queryKey: keys.eventsPrefix });
+        void queryClient.invalidateQueries({ queryKey: keys.eventPrefix });
+      }
     },
   });
 }

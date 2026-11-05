@@ -47,6 +47,7 @@ export function MembersSection({
   onRetry,
   onAdd,
   onDelete,
+  onRegenerate,
 }: {
   isAdmin: boolean;
   pending: boolean;
@@ -55,6 +56,7 @@ export function MembersSection({
   onRetry: () => void;
   onAdd: () => void;
   onDelete: (member: User) => void;
+  onRegenerate: (member: User) => void;
 }) {
   return (
     <section>
@@ -109,6 +111,7 @@ export function MembersSection({
               member={member}
               divided={index > 0}
               onDelete={() => onDelete(member)}
+              onRegenerate={onRegenerate}
             />
           ))
         )}

@@ -1,4 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
+import type { ReactNode } from 'react';
 import { FormError } from '../../components/ui/FormError';
 import type { AppFormApi } from '../../components/ui/formApi';
 import { SelectField } from '../../components/ui/SelectField';
@@ -22,10 +23,12 @@ export function TaskFormFields({
   form,
   assigneeOptions,
   serverError,
+  notice,
 }: {
   form: AppFormApi<TaskFormValues>;
   assigneeOptions: { value: string; label: string }[];
   serverError: string | null;
+  notice?: ReactNode;
 }) {
   return (
     <form
@@ -37,6 +40,7 @@ export function TaskFormFields({
       }}
     >
       {serverError && <FormError message={serverError} />}
+      {notice}
 
       <form.Field
         name="title"

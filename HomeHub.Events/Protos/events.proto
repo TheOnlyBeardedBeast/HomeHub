@@ -18,6 +18,7 @@ message Event {
   string category = 8;
   bool allDay = 9;
   repeated google.protobuf.Timestamp exceptDates = 10;
+  int32 version = 11;
 }
 
 message SimplifiedEvent {
@@ -61,6 +62,7 @@ message RemoveOccurrenceRequest {
 
 message UpdateEventRequest {
   Event event = 1;
+  bool force = 2;
 }
 
 message CreateEventRequest {

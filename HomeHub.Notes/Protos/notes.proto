@@ -14,6 +14,7 @@ message Note {
   string created_by = 4;
   google.protobuf.Timestamp created_at = 5;
   optional google.protobuf.Timestamp updated_at = 6;
+  int32 version = 7;
 }
 
 message CreateNoteRequest {
@@ -34,6 +35,7 @@ message GetNoteResponse {
 
 message UpdateNoteRequest {
   Note note = 1;
+  bool force = 2;
 }
 
 message DeleteNoteRequest {

@@ -44,7 +44,8 @@ public class EventHub : EventService.EventServiceBase
             Rrules = request.Event.Rrules.ToArray(),
             Category = request.Event.Category,
             AllDay = request.Event.AllDay,
-            ExceptDates = request.Event.ExceptDates.Select(ts => ts.ToDateTime()).ToArray()
+            ExceptDates = request.Event.ExceptDates.Select(ts => ts.ToDateTime()).ToArray(),
+            Version = 1
         };
 
         _dbContext.Events.Add(eventEntity);
@@ -83,7 +84,8 @@ public class EventHub : EventService.EventServiceBase
             Start = Timestamp.FromDateTime(eventEntity.Start),
             End = eventEntity.End.HasValue ? Timestamp.FromDateTime(eventEntity.End.Value) : null,
             Category = eventEntity.Category,
-            AllDay = eventEntity.AllDay
+            AllDay = eventEntity.AllDay,
+            Version = eventEntity.Version
         };
 
         if (eventEntity.Rrules != null && eventEntity.Rrules.Length > 0)
@@ -246,8 +248,10 @@ public class EventHub : EventService.EventServiceBase
             }
         }
 
+        eventEntity.Version++;
+
         _dbContext.Events.Update(eventEntity);
-        await _dbContext.SaveChangesAsync();
+        await SaveWithConflictAsync();
 
         return new Empty();
     }
@@ -275,6 +279,11 @@ public class EventHub : EventService.EventServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"Event with ID {eventId} not found"));
         }
 
+        if (!request.Force && request.Event.Version != eventEntity.Version)
+        {
+            throw Conflict("Event");
+        }
+
         var start = RequireStart(request.Event);
         var end = request.Event.End?.ToDateTime();
         ValidateDates(start, end);
@@ -289,12 +298,30 @@ public class EventHub : EventService.EventServiceBase
         eventEntity.Category = request.Event.Category;
         eventEntity.AllDay = request.Event.AllDay;
         eventEntity.ExceptDates = request.Event.ExceptDates.Select(ts => ts.ToDateTime()).ToArray();
+        eventEntity.Version++;
 
         _dbContext.Events.Update(eventEntity);
-        await _dbContext.SaveChangesAsync();
+        await SaveWithConflictAsync();
 
         return new Empty();
     }
+
+    private async Task SaveWithConflictAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("Event");
+        }
+    }
+
+    private static RpcException Conflict(string resource) =>
+        new(new Status(
+            GrpcStatusCode.Aborted,
+            $"{resource} changed since you loaded it. Reload and try again."));
 
     private static DateTime RequireStart(Event protoEvent)
     {

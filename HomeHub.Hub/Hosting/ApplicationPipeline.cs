@@ -3,6 +3,7 @@ using HomeHub.Events.Endpoints;
 using HomeHub.Events.Services;
 using HomeHub.Hub.Authentication;
 using HomeHub.Hub.Contexts;
+using HomeHub.Hub.Services;
 using HomeHub.Integrations.Services;
 using HomeHub.Lists.Services;
 using HomeHub.Notes.Services;
@@ -53,6 +54,7 @@ public static class ApplicationPipeline
     public static void MapHomeHubEndpoints(this WebApplication app)
     {
         app.MapGet("/api/version", () => Results.Ok(new { version = VersionInfo.Version }));
+        app.MapDatabaseEndpoints();
         app.MapEventsEndpoints();
         app.MapGrpcService<EventHub>().EnableGrpcWeb();
         app.MapGrpcService<TaskHub>().EnableGrpcWeb();
@@ -61,6 +63,7 @@ public static class ApplicationPipeline
         app.MapGrpcService<UserHub>().EnableGrpcWeb();
         app.MapGrpcService<WeatherHub>().EnableGrpcWeb();
         app.MapGrpcService<QuoteHub>().EnableGrpcWeb();
+        app.MapGrpcService<HostHub>().EnableGrpcWeb();
         app.MapGrpcReflectionService();
         // Fallback for client-side routes (e.g. /calendar) when the SPA is present.
         app.MapFallbackToFile("index.html");

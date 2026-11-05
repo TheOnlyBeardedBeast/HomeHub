@@ -195,6 +195,58 @@ public class UserHubTests
     }
 
     [Fact]
+    public async Task RegenerateUserKey_WithAdminKey_ReplacesKeyAndReturnsNewOne()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var oldHash = ApiKeys.Hash("old-key");
+        var user = new UserEntity { Id = User1, FullName = "Alice", HashedApiKey = oldHash };
+        dbContext.Users.Add(user);
+        await dbContext.SaveChangesAsync();
+
+        var response = await CreateUserHub(dbContext)
+            .RegenerateUserKey(new RegenerateUserKeyRequest { Id = User1.ToString() }, null!);
+
+        Assert.Equal("Alice", response.User.FullName);
+        Assert.NotEmpty(response.ApiKey);
+        Assert.Equal(6, response.ApiKey.Split('-').Length);
+
+        var saved = await dbContext.Users.SingleAsync();
+        Assert.Equal(ApiKeys.Hash(response.ApiKey), saved.HashedApiKey);
+        Assert.NotEqual(oldHash, saved.HashedApiKey);
+    }
+
+    [Fact]
+    public async Task RegenerateUserKey_WithoutAdminKey_ThrowsPermissionDenied()
+    {
+        var dbContext = CreateInMemoryDbContext();
+        var oldHash = ApiKeys.Hash("old-key");
+        var user = new UserEntity { Id = User1, FullName = "Alice", HashedApiKey = oldHash };
+        dbContext.Users.Add(user);
+        await dbContext.SaveChangesAsync();
+
+        var userHub = CreateUserHub(dbContext, new CurrentUser { UserId = User1 });
+
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => userHub.RegenerateUserKey(new RegenerateUserKeyRequest { Id = User1.ToString() }, null!));
+
+        Assert.Equal(StatusCode.PermissionDenied, exception.Status.StatusCode);
+        Assert.Equal(oldHash, (await dbContext.Users.SingleAsync()).HashedApiKey);
+    }
+
+    [Fact]
+    public async Task RegenerateUserKey_WithUnknownId_ThrowsNotFound()
+    {
+        var dbContext = CreateInMemoryDbContext();
+
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => CreateUserHub(dbContext).RegenerateUserKey(
+                new RegenerateUserKeyRequest { Id = Guid.NewGuid().ToString() },
+                null!));
+
+        Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
+    }
+
+    [Fact]
     public async Task DeleteUser_WithAdminKey_RemovesUser()
     {
         var dbContext = CreateInMemoryDbContext();

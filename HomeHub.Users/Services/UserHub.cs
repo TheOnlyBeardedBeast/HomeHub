@@ -55,6 +55,34 @@ public class UserHub : UserService.UserServiceBase
         };
     }
 
+    public override async Task<RegenerateUserKeyResponse> RegenerateUserKey(
+        RegenerateUserKeyRequest request,
+        ServerCallContext context)
+    {
+        _currentUser.RequireAdmin();
+
+        if (!Guid.TryParse(request.Id, out var userId))
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "User ID must be a valid GUID"));
+        }
+
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null)
+        {
+            throw new RpcException(new Status(GrpcStatusCode.NotFound, $"User with ID {userId} not found"));
+        }
+
+        var apiKey = ApiKeys.Generate();
+        user.HashedApiKey = ApiKeys.Hash(apiKey);
+        await _dbContext.SaveChangesAsync();
+
+        return new RegenerateUserKeyResponse
+        {
+            User = MapToProtoUser(user),
+            ApiKey = apiKey
+        };
+    }
+
     public override async Task<ListUsersResponse> ListUsers(ListUsersRequest request, ServerCallContext context)
     {
         var users = await _dbContext.Users.OrderBy(u => u.FullName).ToListAsync();

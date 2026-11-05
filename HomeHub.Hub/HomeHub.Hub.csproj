@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Protobuf Include="Protos\host.proto" GrpcServices="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
     <PackageReference Include="Grpc.AspNetCore.Web" />

@@ -1,4 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
+import type { ReactNode } from 'react';
 import { FormError } from '../../components/ui/FormError';
 import type { AppFormApi } from '../../components/ui/formApi';
 import { FormRow } from '../../components/ui/FormRow';
@@ -20,10 +21,12 @@ export function EventFormFields({
   form,
   serverError,
   onSubmit,
+  notice,
 }: {
   form: AppFormApi<EventFormValues>;
   serverError: string | null;
   onSubmit: () => void;
+  notice?: ReactNode;
 }) {
   return (
     <form
@@ -36,6 +39,7 @@ export function EventFormFields({
       }}
     >
       {serverError && <FormError message={serverError} />}
+      {notice}
 
       <form.Field
         name="title"

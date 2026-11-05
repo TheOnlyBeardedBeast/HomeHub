@@ -1,12 +1,11 @@
-import { useForm } from '@tanstack/react-form';
 import * as stylex from '@stylexjs/stylex';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useDeleteNote } from '../../api/hooks/useDeleteNote';
-import { useSaveNote } from '../../api/hooks/useSaveNote';
 import type { NoteMessage } from '../../api/hooks/useNotes';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { ConflictNotice } from '../../components/ui/ConflictNotice';
 import { Dialog } from '../../components/ui/Dialog';
 import { FormError } from '../../components/ui/FormError';
 import { TextAreaField } from '../../components/ui/TextAreaField';
@@ -15,6 +14,7 @@ import { Markdown } from '../../components/ui/Markdown';
 import { errorMessage } from '../../lib/errors';
 import { toast } from '../../lib/toasts';
 import { colors, fonts, radius, space } from '../../styles/tokens.stylex';
+import { useNoteEditor } from './useNoteEditor';
 
 const styles = stylex.create({
   form: { display: 'flex', flexDirection: 'column', gap: space.s4 },
@@ -52,33 +52,9 @@ const styles = stylex.create({
 });
 
 export function NoteDialog({ note, onClose }: { note?: NoteMessage; onClose: () => void }) {
-  const save = useSaveNote();
+  const { form, serverError, conflict, overwrite, discard, saving } = useNoteEditor(note, onClose);
   const remove = useDeleteNote();
-  const [serverError, setServerError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-
-  const form = useForm({
-    defaultValues: {
-      title: note?.title ?? '',
-      content: note?.content ?? '',
-    },
-    onSubmit: async ({ value }) => {
-      setServerError(null);
-      if (!value.title.trim()) return;
-      try {
-        await save.mutateAsync({
-          id: note?.id,
-          title: value.title,
-          content: value.content,
-        });
-        toast(note ? 'Note updated.' : 'Note pinned.', 'success');
-        onClose();
-      } catch (error) {
-        setServerError(errorMessage(error));
-      }
-    },
-  });
-
   return (
     <>
       <Dialog
@@ -100,10 +76,10 @@ export function NoteDialog({ note, onClose }: { note?: NoteMessage; onClose: () 
               </Button>
             )}
             <div {...stylex.props(styles.actionGroup)}>
-              <Button variant="ghost" onClick={onClose} disabled={save.isPending}>
+              <Button variant="ghost" onClick={onClose} disabled={saving}>
                 Cancel
               </Button>
-              <Button loading={save.isPending} onClick={() => form.handleSubmit()}>
+              <Button loading={saving} onClick={() => form.handleSubmit()}>
                 {note ? 'Save note' : 'Pin note'}
               </Button>
             </div>
@@ -119,6 +95,14 @@ export function NoteDialog({ note, onClose }: { note?: NoteMessage; onClose: () 
           }}
         >
           {serverError && <FormError message={serverError} />}
+          {conflict && (
+            <ConflictNotice
+              message="This note changed on another device while you were editing."
+              busy={saving}
+              onOverwrite={overwrite}
+              onDiscard={discard}
+            />
+          )}
 
           <form.Field
             name="title"

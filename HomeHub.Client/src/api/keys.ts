@@ -1,6 +1,7 @@
 export const keys = {
   currentUser: ['current-user'] as const,
   version: ['version'] as const,
+  databaseInfo: ['database-info'] as const,
   users: ['users'] as const,
   events: (start: string, end: string) => ['events', start, end] as const,
   event: (id: string) => ['event', id] as const,

@@ -14,6 +14,8 @@ message List {
   string created_by = 4;
   google.protobuf.Timestamp created_at = 5;
   optional google.protobuf.Timestamp updated_at = 6;
+  int32 version = 7;
+  bool prioritized = 8;
 }
 
 message CreateListRequest {
@@ -34,6 +36,7 @@ message GetListResponse {
 
 message UpdateListRequest {
   List list = 1;
+  bool force = 2;
 }
 
 message DeleteListRequest {
@@ -41,6 +44,11 @@ message DeleteListRequest {
 }
 
 message ListListsRequest {
+}
+
+message SetPriorityListRequest {
+  string id = 1;
+  bool prioritized = 2;
 }
 
 message ListListsResponse {
@@ -53,4 +61,5 @@ service ListService {
   rpc UpdateList(UpdateListRequest) returns (google.protobuf.Empty);
   rpc DeleteList(DeleteListRequest) returns (google.protobuf.Empty);
   rpc ListLists(ListListsRequest) returns (ListListsResponse);
+  rpc SetPriorityList(SetPriorityListRequest) returns (google.protobuf.Empty);
 }

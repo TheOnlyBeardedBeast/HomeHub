@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file lists.proto.
  */
 export const file_lists: GenFile = /*@__PURE__*/
-  fileDesc("CgtsaXN0cy5wcm90bxINSG9tZUh1Yi5MaXN0cyK6AQoETGlzdBIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIPCgdjb250ZW50GAMgAygJEhIKCmNyZWF0ZWRfYnkYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMwoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAIgBAUINCgtfdXBkYXRlZF9hdCI2ChFDcmVhdGVMaXN0UmVxdWVzdBIhCgRsaXN0GAEgASgLMhMuSG9tZUh1Yi5MaXN0cy5MaXN0IiAKEkNyZWF0ZUxpc3RSZXNwb25zZRIKCgJpZBgBIAEoCSIcCg5HZXRMaXN0UmVxdWVzdBIKCgJpZBgBIAEoCSI0Cg9HZXRMaXN0UmVzcG9uc2USIQoEbGlzdBgBIAEoCzITLkhvbWVIdWIuTGlzdHMuTGlzdCI2ChFVcGRhdGVMaXN0UmVxdWVzdBIhCgRsaXN0GAEgASgLMhMuSG9tZUh1Yi5MaXN0cy5MaXN0Ih8KEURlbGV0ZUxpc3RSZXF1ZXN0EgoKAmlkGAEgASgJIhIKEExpc3RMaXN0c1JlcXVlc3QiNwoRTGlzdExpc3RzUmVzcG9uc2USIgoFbGlzdHMYASADKAsyEy5Ib21lSHViLkxpc3RzLkxpc3QyigMKC0xpc3RTZXJ2aWNlElEKCkNyZWF0ZUxpc3QSIC5Ib21lSHViLkxpc3RzLkNyZWF0ZUxpc3RSZXF1ZXN0GiEuSG9tZUh1Yi5MaXN0cy5DcmVhdGVMaXN0UmVzcG9uc2USSAoHR2V0TGlzdBIdLkhvbWVIdWIuTGlzdHMuR2V0TGlzdFJlcXVlc3QaHi5Ib21lSHViLkxpc3RzLkdldExpc3RSZXNwb25zZRJGCgpVcGRhdGVMaXN0EiAuSG9tZUh1Yi5MaXN0cy5VcGRhdGVMaXN0UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRJGCgpEZWxldGVMaXN0EiAuSG9tZUh1Yi5MaXN0cy5EZWxldGVMaXN0UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRJOCglMaXN0TGlzdHMSHy5Ib21lSHViLkxpc3RzLkxpc3RMaXN0c1JlcXVlc3QaIC5Ib21lSHViLkxpc3RzLkxpc3RMaXN0c1Jlc3BvbnNlQhCqAg1Ib21lSHViLkxpc3RzYgZwcm90bzM", [file_google_protobuf_timestamp, file_google_protobuf_empty]);
+  fileDesc("CgtsaXN0cy5wcm90bxINSG9tZUh1Yi5MaXN0cyLgAQoETGlzdBIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIPCgdjb250ZW50GAMgAygJEhIKCmNyZWF0ZWRfYnkYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMwoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAIgBARIPCgd2ZXJzaW9uGAcgASgFEhMKC3ByaW9yaXRpemVkGAggASgIQg0KC191cGRhdGVkX2F0IjYKEUNyZWF0ZUxpc3RSZXF1ZXN0EiEKBGxpc3QYASABKAsyEy5Ib21lSHViLkxpc3RzLkxpc3QiIAoSQ3JlYXRlTGlzdFJlc3BvbnNlEgoKAmlkGAEgASgJIhwKDkdldExpc3RSZXF1ZXN0EgoKAmlkGAEgASgJIjQKD0dldExpc3RSZXNwb25zZRIhCgRsaXN0GAEgASgLMhMuSG9tZUh1Yi5MaXN0cy5MaXN0IkUKEVVwZGF0ZUxpc3RSZXF1ZXN0EiEKBGxpc3QYASABKAsyEy5Ib21lSHViLkxpc3RzLkxpc3QSDQoFZm9yY2UYAiABKAgiHwoRRGVsZXRlTGlzdFJlcXVlc3QSCgoCaWQYASABKAkiEgoQTGlzdExpc3RzUmVxdWVzdCI5ChZTZXRQcmlvcml0eUxpc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhMKC3ByaW9yaXRpemVkGAIgASgIIjcKEUxpc3RMaXN0c1Jlc3BvbnNlEiIKBWxpc3RzGAEgAygLMhMuSG9tZUh1Yi5MaXN0cy5MaXN0MtwDCgtMaXN0U2VydmljZRJRCgpDcmVhdGVMaXN0EiAuSG9tZUh1Yi5MaXN0cy5DcmVhdGVMaXN0UmVxdWVzdBohLkhvbWVIdWIuTGlzdHMuQ3JlYXRlTGlzdFJlc3BvbnNlEkgKB0dldExpc3QSHS5Ib21lSHViLkxpc3RzLkdldExpc3RSZXF1ZXN0Gh4uSG9tZUh1Yi5MaXN0cy5HZXRMaXN0UmVzcG9uc2USRgoKVXBkYXRlTGlzdBIgLkhvbWVIdWIuTGlzdHMuVXBkYXRlTGlzdFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkSRgoKRGVsZXRlTGlzdBIgLkhvbWVIdWIuTGlzdHMuRGVsZXRlTGlzdFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkSTgoJTGlzdExpc3RzEh8uSG9tZUh1Yi5MaXN0cy5MaXN0TGlzdHNSZXF1ZXN0GiAuSG9tZUh1Yi5MaXN0cy5MaXN0TGlzdHNSZXNwb25zZRJQCg9TZXRQcmlvcml0eUxpc3QSJS5Ib21lSHViLkxpc3RzLlNldFByaW9yaXR5TGlzdFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHlCEKoCDUhvbWVIdWIuTGlzdHNiBnByb3RvMw", [file_google_protobuf_timestamp, file_google_protobuf_empty]);
 
 /**
  * @generated from message HomeHub.Lists.List
@@ -47,6 +47,16 @@ export type List = Message<"HomeHub.Lists.List"> & {
    * @generated from field: optional google.protobuf.Timestamp updated_at = 6;
    */
   updatedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: int32 version = 7;
+   */
+  version: number;
+
+  /**
+   * @generated from field: bool prioritized = 8;
+   */
+  prioritized: boolean;
 };
 
 /**
@@ -132,6 +142,11 @@ export type UpdateListRequest = Message<"HomeHub.Lists.UpdateListRequest"> & {
    * @generated from field: HomeHub.Lists.List list = 1;
    */
   list?: List | undefined;
+
+  /**
+   * @generated from field: bool force = 2;
+   */
+  force: boolean;
 };
 
 /**
@@ -172,6 +187,28 @@ export const ListListsRequestSchema: GenMessage<ListListsRequest> = /*@__PURE__*
   messageDesc(file_lists, 7);
 
 /**
+ * @generated from message HomeHub.Lists.SetPriorityListRequest
+ */
+export type SetPriorityListRequest = Message<"HomeHub.Lists.SetPriorityListRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: bool prioritized = 2;
+   */
+  prioritized: boolean;
+};
+
+/**
+ * Describes the message HomeHub.Lists.SetPriorityListRequest.
+ * Use `create(SetPriorityListRequestSchema)` to create a new message.
+ */
+export const SetPriorityListRequestSchema: GenMessage<SetPriorityListRequest> = /*@__PURE__*/
+  messageDesc(file_lists, 8);
+
+/**
  * @generated from message HomeHub.Lists.ListListsResponse
  */
 export type ListListsResponse = Message<"HomeHub.Lists.ListListsResponse"> & {
@@ -186,7 +223,7 @@ export type ListListsResponse = Message<"HomeHub.Lists.ListListsResponse"> & {
  * Use `create(ListListsResponseSchema)` to create a new message.
  */
 export const ListListsResponseSchema: GenMessage<ListListsResponse> = /*@__PURE__*/
-  messageDesc(file_lists, 8);
+  messageDesc(file_lists, 9);
 
 /**
  * @generated from service HomeHub.Lists.ListService
@@ -231,6 +268,14 @@ export const ListService: GenService<{
     methodKind: "unary";
     input: typeof ListListsRequestSchema;
     output: typeof ListListsResponseSchema;
+  },
+  /**
+   * @generated from rpc HomeHub.Lists.ListService.SetPriorityList
+   */
+  setPriorityList: {
+    methodKind: "unary";
+    input: typeof SetPriorityListRequestSchema;
+    output: typeof EmptySchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_lists, 0);

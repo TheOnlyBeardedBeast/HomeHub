@@ -1,18 +1,23 @@
 import { useStore } from '@nanostores/react';
 import * as stylex from '@stylexjs/stylex';
 import { UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useCurrentUser } from '../api/hooks/useCurrentUser';
+import { useDatabaseBackup } from '../api/hooks/useDatabaseBackup';
+import { useDatabaseInfo } from '../api/hooks/useDatabaseInfo';
+import { useRestoreDatabase } from '../api/hooks/useRestoreDatabase';
 import { useUsers } from '../api/hooks/useUsers';
 import { useVersion } from '../api/hooks/useVersion';
 import { Button } from '../components/ui/Button';
 import { PageError } from '../components/ui/PageError';
 import { PageHeader } from '../components/ui/PageHeader';
 import { CreateMemberDialog } from '../features/household/CreateMemberDialog';
+import { DatabaseCard } from '../features/household/DatabaseCard';
 import { DeleteMemberDialog } from '../features/household/DeleteMemberDialog';
 import { HouseholdRail } from '../features/household/HouseholdRail';
 import { MembersSection } from '../features/household/MembersSection';
 import { ProfileCard } from '../features/household/ProfileCard';
+import { RegenerateMemberKeyDialog } from '../features/household/RegenerateMemberKeyDialog';
 import type { User } from '../gen/users_pb';
 import { UserType } from '../gen/users_pb';
 import { queryClient } from '../lib/queryClient';
@@ -36,14 +41,19 @@ export function HouseholdPage() {
   const isAdmin = currentUser.data?.isAdmin ?? false;
   const users = useUsers(isAdmin);
   const version = useVersion();
+  const databaseInfo = useDatabaseInfo(isAdmin);
+  const databaseBackup = useDatabaseBackup();
+  const databaseRestore = useRestoreDatabase();
   const apiKey = useStore($apiKey);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [regenerateTarget, setRegenerateTarget] = useState<User | null>(null);
 
   const me = currentUser.data?.user;
   const isDisplay = me?.type === UserType.DISPLAY;
   const displayName = me?.fullName ?? 'Household admin';
   const members = users.data ?? [];
+  const closeRegenerate = useCallback(() => setRegenerateTarget(null), []);
 
   if (currentUser.isError) {
     return (
@@ -96,17 +106,30 @@ export function HouseholdPage() {
             onRetry={() => users.refetch()}
             onAdd={() => setCreateOpen(true)}
             onDelete={setDeleteTarget}
+            onRegenerate={setRegenerateTarget}
           />
         </div>
 
         <aside {...stylex.props(styles.rail)}>
           <HouseholdRail version={version.data} pending={version.isPending} />
+          <DatabaseCard
+            visible={isAdmin}
+            path={databaseInfo.data}
+            pending={databaseInfo.isPending}
+            downloading={databaseBackup.downloading}
+            restoring={databaseRestore.restoring}
+            onDownload={databaseBackup.download}
+            onRestore={databaseRestore.restoreFile}
+          />
         </aside>
       </div>
 
       {createOpen && <CreateMemberDialog onClose={() => setCreateOpen(false)} />}
 
       <DeleteMemberDialog member={deleteTarget} onClose={() => setDeleteTarget(null)} />
+      {regenerateTarget && (
+        <RegenerateMemberKeyDialog member={regenerateTarget} onClose={closeRegenerate} />
+      )}
     </>
   );
 }

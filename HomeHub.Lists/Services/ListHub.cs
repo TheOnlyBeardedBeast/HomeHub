@@ -33,7 +33,8 @@ public class ListHub : ListService.ListServiceBase
             Title = request.List.Title,
             Content = request.List.Content.ToArray(),
             CreatedBy = _currentUser.RequireUserId(),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Version = 1
         };
 
         _dbContext.Lists.Add(listEntity);
@@ -92,13 +93,19 @@ public class ListHub : ListService.ListServiceBase
             throw new RpcException(new Status(GrpcStatusCode.NotFound, $"List with ID {listId} not found"));
         }
 
+        if (!request.Force && request.List.Version != listEntity.Version)
+        {
+            throw Conflict("List");
+        }
+
         // CreatedBy and CreatedAt are immutable.
         listEntity.Title = request.List.Title;
         listEntity.Content = request.List.Content.ToArray();
         listEntity.UpdatedAt = DateTime.UtcNow;
+        listEntity.Version++;
 
         _dbContext.Lists.Update(listEntity);
-        await _dbContext.SaveChangesAsync();
+        await SaveWithConflictAsync();
 
         return new Empty();
     }
@@ -129,12 +136,64 @@ public class ListHub : ListService.ListServiceBase
 
     public override async Task<ListListsResponse> ListLists(ListListsRequest request, ServerCallContext context)
     {
-        var lists = await _dbContext.Lists.OrderBy(l => l.Title).ToListAsync();
+        var lists = await _dbContext.Lists
+            .OrderByDescending(l => l.Prioritized)
+            .ThenBy(l => l.Title)
+            .ToListAsync();
         var response = new ListListsResponse();
         response.Lists.AddRange(lists.Select(MapToProtoList));
 
         return response;
     }
+
+    public override async Task<Empty> SetPriorityList(
+        SetPriorityListRequest request,
+        ServerCallContext context)
+    {
+        if (!Guid.TryParse(request.Id, out var listId))
+        {
+            throw new RpcException(new Status(GrpcStatusCode.InvalidArgument, "List ID must be a valid GUID"));
+        }
+
+        var lists = await _dbContext.Lists.ToListAsync();
+        if (lists.All(list => list.Id != listId))
+        {
+            throw new RpcException(new Status(GrpcStatusCode.NotFound, $"List with ID {listId} not found"));
+        }
+
+        foreach (var list in lists)
+        {
+            list.Prioritized = request.Prioritized && list.Id == listId;
+        }
+
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("List");
+        }
+
+        return new Empty();
+    }
+
+    private async Task SaveWithConflictAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("List");
+        }
+    }
+
+    private static RpcException Conflict(string resource) =>
+        new(new Status(
+            GrpcStatusCode.Aborted,
+            $"{resource} changed since you loaded it. Reload and try again."));
 
     private static ListProto MapToProtoList(ListEntity listEntity)
     {
@@ -143,7 +202,9 @@ public class ListHub : ListService.ListServiceBase
             Id = listEntity.Id.ToString(),
             Title = listEntity.Title,
             CreatedBy = listEntity.CreatedBy.ToString(),
-            CreatedAt = Timestamp.FromDateTime(listEntity.CreatedAt)
+            CreatedAt = Timestamp.FromDateTime(listEntity.CreatedAt),
+            Version = listEntity.Version,
+            Prioritized = listEntity.Prioritized
         };
 
         protoList.Content.AddRange(listEntity.Content);

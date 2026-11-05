@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { isConcurrencyConflict } from '../../lib/errors';
 import { toTimestamp } from '../../lib/format';
 import { taskClient } from '../clients';
 import { keys } from '../keys';
@@ -10,6 +11,8 @@ export interface RecurringTaskDraft {
   assignedTo?: string;
   rrule: string;
   createdAt?: Date;
+  version?: number;
+  force?: boolean;
 }
 
 export function useSaveRecurringTask() {
@@ -23,10 +26,11 @@ export function useSaveRecurringTask() {
         assignedTo: draft.assignedTo || undefined,
         rrule: draft.rrule.trim(),
         createdAt: toTimestamp(draft.createdAt ?? new Date()),
+        version: draft.version ?? 0,
       };
 
       if (draft.id) {
-        await taskClient.updateRecurringTask({ recurringTask });
+        await taskClient.updateRecurringTask({ recurringTask, force: draft.force });
         return draft.id;
       }
 
@@ -36,6 +40,12 @@ export function useSaveRecurringTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.recurringPrefix });
       queryClient.invalidateQueries({ queryKey: keys.tasksPrefix });
+    },
+    onError: (error) => {
+      if (isConcurrencyConflict(error)) {
+        void queryClient.invalidateQueries({ queryKey: keys.recurringPrefix });
+        void queryClient.invalidateQueries({ queryKey: keys.tasksPrefix });
+      }
     },
   });
 }

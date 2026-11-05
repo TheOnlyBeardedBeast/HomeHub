@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package HomeHub.Host;
+
+option csharp_namespace = "HomeHub.Host";
+
+message GetDatabaseInfoRequest {
+}
+
+message GetDatabaseInfoResponse {
+  string path = 1;
+}
+
+message BackupDatabaseRequest {
+}
+
+message DatabaseBackupChunk {
+  bytes data = 1;
+}
+
+service HostService {
+  rpc GetDatabaseInfo(GetDatabaseInfoRequest) returns (GetDatabaseInfoResponse);
+  rpc BackupDatabase(BackupDatabaseRequest) returns (stream DatabaseBackupChunk);
+}

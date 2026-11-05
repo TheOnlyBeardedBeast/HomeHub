@@ -50,8 +50,19 @@ message DeleteUserRequest {
   string id = 1;
 }
 
+message RegenerateUserKeyRequest {
+  string id = 1;
+}
+
+message RegenerateUserKeyResponse {
+  User user = 1;
+  // Returned once; the previous key stops working immediately.
+  string api_key = 2;
+}
+
 service UserService {
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc RegenerateUserKey(RegenerateUserKeyRequest) returns (RegenerateUserKeyResponse);
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);

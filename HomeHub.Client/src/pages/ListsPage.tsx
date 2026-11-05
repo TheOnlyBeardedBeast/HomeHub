@@ -8,6 +8,7 @@ import { PageError } from '../components/ui/PageError';
 import { PageHeader } from '../components/ui/PageHeader';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { ListDialog } from '../features/lists/ListDialog';
+import { PriorityListButton } from '../features/lists/PriorityListButton';
 import { Markdown } from '../components/ui/Markdown';
 import { formatRelative, plural, toDate } from '../lib/format';
 import { usePeople } from '../lib/people';
@@ -71,6 +72,7 @@ const styles = stylex.create({
     marginBottom: '4px',
   },
   titleRow: { display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 },
+  cardActions: { display: 'flex', alignItems: 'center', gap: '2px' },
   icon: { color: colors.accent, flexShrink: 0 },
   title: {
     fontFamily: fonts.display,
@@ -226,13 +228,16 @@ export function ListsPage() {
                     </span>
                     <h2 {...stylex.props(styles.title)}>{list.title || 'Untitled list'}</h2>
                   </div>
-                  <IconButton
-                    label={`Edit ${list.title}`}
-                    size="sm"
-                    onClick={() => setDialog({ list })}
-                  >
-                    <Pencil size={14} />
-                  </IconButton>
+                  <div {...stylex.props(styles.cardActions)}>
+                    <PriorityListButton list={list} />
+                    <IconButton
+                      label={`Edit ${list.title}`}
+                      size="sm"
+                      onClick={() => setDialog({ list })}
+                    >
+                      <Pencil size={14} />
+                    </IconButton>
+                  </div>
                 </div>
                 <span {...stylex.props(styles.meta)}>
                   {author ? `${author} · ` : ''}

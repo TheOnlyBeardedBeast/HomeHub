@@ -15,6 +15,9 @@ const root = document.getElementById('root');
 if (!root) throw new Error('Root element missing');
 
 registerServiceWorker();
+// Ask the browser to keep site data; otherwise storage pressure can evict the
+// stored API key from an installed app.
+void navigator.storage?.persist?.().catch(() => undefined);
 
 createRoot(root).render(
   <StrictMode>

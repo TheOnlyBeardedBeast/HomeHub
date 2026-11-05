@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file users.proto.
  */
 export const file_users: GenFile = /*@__PURE__*/
-  fileDesc("Cgt1c2Vycy5wcm90bxINSG9tZUh1Yi5Vc2VycyJMCgRVc2VyEgoKAmlkGAEgASgJEhEKCWZ1bGxfbmFtZRgCIAEoCRIlCgR0eXBlGAMgASgOMhcuSG9tZUh1Yi5Vc2Vycy5Vc2VyVHlwZSJNChFDcmVhdGVVc2VyUmVxdWVzdBIRCglmdWxsX25hbWUYASABKAkSJQoEdHlwZRgCIAEoDjIXLkhvbWVIdWIuVXNlcnMuVXNlclR5cGUiSAoSQ3JlYXRlVXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5Ib21lSHViLlVzZXJzLlVzZXISDwoHYXBpX2tleRgCIAEoCSISChBMaXN0VXNlcnNSZXF1ZXN0IjcKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuSG9tZUh1Yi5Vc2Vycy5Vc2VyIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCJNChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5Ib21lSHViLlVzZXJzLlVzZXISEAoIaXNfYWRtaW4YAiABKAgiHwoRRGVsZXRlVXNlclJlcXVlc3QSCgoCaWQYASABKAkqOQoIVXNlclR5cGUSFgoSVVNFUl9UWVBFX0VORF9VU0VSEAASFQoRVVNFUl9UWVBFX0RJU1BMQVkQATLXAgoLVXNlclNlcnZpY2USUQoKQ3JlYXRlVXNlchIgLkhvbWVIdWIuVXNlcnMuQ3JlYXRlVXNlclJlcXVlc3QaIS5Ib21lSHViLlVzZXJzLkNyZWF0ZVVzZXJSZXNwb25zZRJOCglMaXN0VXNlcnMSHy5Ib21lSHViLlVzZXJzLkxpc3RVc2Vyc1JlcXVlc3QaIC5Ib21lSHViLlVzZXJzLkxpc3RVc2Vyc1Jlc3BvbnNlEl0KDkdldEN1cnJlbnRVc2VyEiQuSG9tZUh1Yi5Vc2Vycy5HZXRDdXJyZW50VXNlclJlcXVlc3QaJS5Ib21lSHViLlVzZXJzLkdldEN1cnJlbnRVc2VyUmVzcG9uc2USRgoKRGVsZXRlVXNlchIgLkhvbWVIdWIuVXNlcnMuRGVsZXRlVXNlclJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHlCEKoCDUhvbWVIdWIuVXNlcnNiBnByb3RvMw", [file_google_protobuf_empty]);
+  fileDesc("Cgt1c2Vycy5wcm90bxINSG9tZUh1Yi5Vc2VycyJMCgRVc2VyEgoKAmlkGAEgASgJEhEKCWZ1bGxfbmFtZRgCIAEoCRIlCgR0eXBlGAMgASgOMhcuSG9tZUh1Yi5Vc2Vycy5Vc2VyVHlwZSJNChFDcmVhdGVVc2VyUmVxdWVzdBIRCglmdWxsX25hbWUYASABKAkSJQoEdHlwZRgCIAEoDjIXLkhvbWVIdWIuVXNlcnMuVXNlclR5cGUiSAoSQ3JlYXRlVXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5Ib21lSHViLlVzZXJzLlVzZXISDwoHYXBpX2tleRgCIAEoCSISChBMaXN0VXNlcnNSZXF1ZXN0IjcKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuSG9tZUh1Yi5Vc2Vycy5Vc2VyIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCJNChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5Ib21lSHViLlVzZXJzLlVzZXISEAoIaXNfYWRtaW4YAiABKAgiHwoRRGVsZXRlVXNlclJlcXVlc3QSCgoCaWQYASABKAkiJgoYUmVnZW5lcmF0ZVVzZXJLZXlSZXF1ZXN0EgoKAmlkGAEgASgJIk8KGVJlZ2VuZXJhdGVVc2VyS2V5UmVzcG9uc2USIQoEdXNlchgBIAEoCzITLkhvbWVIdWIuVXNlcnMuVXNlchIPCgdhcGlfa2V5GAIgASgJKjkKCFVzZXJUeXBlEhYKElVTRVJfVFlQRV9FTkRfVVNFUhAAEhUKEVVTRVJfVFlQRV9ESVNQTEFZEAEyvwMKC1VzZXJTZXJ2aWNlElEKCkNyZWF0ZVVzZXISIC5Ib21lSHViLlVzZXJzLkNyZWF0ZVVzZXJSZXF1ZXN0GiEuSG9tZUh1Yi5Vc2Vycy5DcmVhdGVVc2VyUmVzcG9uc2USZgoRUmVnZW5lcmF0ZVVzZXJLZXkSJy5Ib21lSHViLlVzZXJzLlJlZ2VuZXJhdGVVc2VyS2V5UmVxdWVzdBooLkhvbWVIdWIuVXNlcnMuUmVnZW5lcmF0ZVVzZXJLZXlSZXNwb25zZRJOCglMaXN0VXNlcnMSHy5Ib21lSHViLlVzZXJzLkxpc3RVc2Vyc1JlcXVlc3QaIC5Ib21lSHViLlVzZXJzLkxpc3RVc2Vyc1Jlc3BvbnNlEl0KDkdldEN1cnJlbnRVc2VyEiQuSG9tZUh1Yi5Vc2Vycy5HZXRDdXJyZW50VXNlclJlcXVlc3QaJS5Ib21lSHViLlVzZXJzLkdldEN1cnJlbnRVc2VyUmVzcG9uc2USRgoKRGVsZXRlVXNlchIgLkhvbWVIdWIuVXNlcnMuRGVsZXRlVXNlclJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHlCEKoCDUhvbWVIdWIuVXNlcnNiBnByb3RvMw", [file_google_protobuf_empty]);
 
 /**
  * @generated from message HomeHub.Users.User
@@ -172,6 +172,47 @@ export const DeleteUserRequestSchema: GenMessage<DeleteUserRequest> = /*@__PURE_
   messageDesc(file_users, 7);
 
 /**
+ * @generated from message HomeHub.Users.RegenerateUserKeyRequest
+ */
+export type RegenerateUserKeyRequest = Message<"HomeHub.Users.RegenerateUserKeyRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message HomeHub.Users.RegenerateUserKeyRequest.
+ * Use `create(RegenerateUserKeyRequestSchema)` to create a new message.
+ */
+export const RegenerateUserKeyRequestSchema: GenMessage<RegenerateUserKeyRequest> = /*@__PURE__*/
+  messageDesc(file_users, 8);
+
+/**
+ * @generated from message HomeHub.Users.RegenerateUserKeyResponse
+ */
+export type RegenerateUserKeyResponse = Message<"HomeHub.Users.RegenerateUserKeyResponse"> & {
+  /**
+   * @generated from field: HomeHub.Users.User user = 1;
+   */
+  user?: User | undefined;
+
+  /**
+   * Returned once; the previous key stops working immediately.
+   *
+   * @generated from field: string api_key = 2;
+   */
+  apiKey: string;
+};
+
+/**
+ * Describes the message HomeHub.Users.RegenerateUserKeyResponse.
+ * Use `create(RegenerateUserKeyResponseSchema)` to create a new message.
+ */
+export const RegenerateUserKeyResponseSchema: GenMessage<RegenerateUserKeyResponse> = /*@__PURE__*/
+  messageDesc(file_users, 9);
+
+/**
  * @generated from enum HomeHub.Users.UserType
  */
 export enum UserType {
@@ -207,6 +248,14 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof CreateUserRequestSchema;
     output: typeof CreateUserResponseSchema;
+  },
+  /**
+   * @generated from rpc HomeHub.Users.UserService.RegenerateUserKey
+   */
+  regenerateUserKey: {
+    methodKind: "unary";
+    input: typeof RegenerateUserKeyRequestSchema;
+    output: typeof RegenerateUserKeyResponseSchema;
   },
   /**
    * @generated from rpc HomeHub.Users.UserService.ListUsers

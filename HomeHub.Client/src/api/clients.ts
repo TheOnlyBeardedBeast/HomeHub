@@ -1,6 +1,7 @@
 import { createClient, type Interceptor } from '@connectrpc/connect';
 import { createGrpcWebTransport } from '@connectrpc/connect-web';
 import { EventService } from '../gen/events_pb';
+import { HostService } from '../gen/host_pb';
 import { QuoteService, WeatherService } from '../gen/integrations_pb';
 import { ListService } from '../gen/lists_pb';
 import { NoteService } from '../gen/notes_pb';
@@ -27,6 +28,7 @@ export const taskClient = createClient(TaskService, transport);
 export const noteClient = createClient(NoteService, transport);
 export const listClient = createClient(ListService, transport);
 export const userClient = createClient(UserService, transport);
+export const hostClient = createClient(HostService, transport);
 export const weatherClient = createClient(WeatherService, transport);
 export const quoteClient = createClient(QuoteService, transport);
 

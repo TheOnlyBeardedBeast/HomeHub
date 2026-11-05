@@ -141,8 +141,8 @@ export function MemberKeyResult({ name, apiKey }: { name: string; apiKey: string
       <div {...stylex.props(styles.warn)}>
         <ShieldCheck size={15} {...stylex.props(styles.warnIcon)} />
         <span>
-          Only a hash of this key is stored on the server. If it is lost, delete the member and
-          create a new key.
+          Only a hash of this key is stored on the server. If it is lost, generate a new key from
+          Members &amp; keys.
         </span>
       </div>
     </div>

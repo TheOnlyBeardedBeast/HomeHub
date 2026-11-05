@@ -15,6 +15,7 @@ message RecurringTask {
   optional string assigned_to = 5;
   string rrule = 6;
   google.protobuf.Timestamp created_at = 7;
+  int32 version = 8;
 }
 
 message Task {
@@ -29,6 +30,7 @@ message Task {
   // For recurring instances this is the occurrence date; clients must send it
   // back when creating a completed copy of a generated occurrence.
   optional google.protobuf.Timestamp created_at = 9;
+  int32 version = 10;
 }
 
 message CreateTaskRequest {
@@ -66,10 +68,12 @@ message GetRecurringTaskResponse {
 
 message UpdateTaskRequest {
   Task task = 1;
+  bool force = 2;
 }
 
 message UpdateRecurringTaskRequest {
   RecurringTask recurring_task = 1;
+  bool force = 2;
 }
 
 message DeleteTaskRequest {

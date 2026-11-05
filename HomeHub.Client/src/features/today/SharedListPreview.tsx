@@ -72,7 +72,7 @@ export function SharedListPreview({ list }: { list?: ListMessage }) {
           </>
         ) : (
           <p {...stylex.props(styles.railEmpty)}>
-            No shared lists yet. Start one for the weekly shop or the next trip.
+            No list is prioritized yet. Star one on the Shared lists page to show it here.
           </p>
         )}
       </Card>

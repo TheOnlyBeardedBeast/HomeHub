@@ -58,7 +58,7 @@ export function useTodayData() {
   const openTasks = (tasks.data ?? []).filter((task) => !task.done);
   const doneTasks = (tasks.data ?? []).filter((task) => task.done);
   const latestNote = (notes.data ?? [])[0];
-  const topList = (lists.data ?? [])[0];
+  const topList = (lists.data ?? []).find((list) => list.prioritized);
   const allEvents = events.data ?? [];
   const todayEvents = eventsBetween(allEvents, dayStart, dayEnd);
   // An all-day event today is already under way, so only strictly upcoming

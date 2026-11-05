@@ -9,6 +9,7 @@ public class RecurringTask
     public Guid? AssignedTo { get; set; }
     public string RRule { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public int Version { get; set; } = 1;
 
     // Navigation property
     public ICollection<Task> Instances { get; set; } = new List<Task>();

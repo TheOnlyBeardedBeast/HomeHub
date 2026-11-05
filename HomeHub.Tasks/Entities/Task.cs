@@ -10,6 +10,7 @@ public class Task
     public bool Done { get; set; } = false;
     public DateTime? DoneAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public int Version { get; set; } = 1;
 
     // Foreign key to recurring task (null for non-recurring tasks)
     public Guid? RecurringTaskId { get; set; }
